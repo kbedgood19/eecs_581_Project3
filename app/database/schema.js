@@ -84,5 +84,17 @@ export async function createTables() {
         );
     `);
 
+
+    // Stores information specific to books.
+    await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS Book (
+            media_id INTEGER PRIMARY KEY,
+            author TEXT,
+
+            FOREIGN KEY (media_id) REFERENCES MediaItem(id)
+        );
+    `);
+
+
     return db;
 }
