@@ -8,6 +8,8 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { createTables } from './database/schema';
+// TEMPORARY: Import database functions for testing.
+import { countMediaRecords, countFeedbackRecords } from './database/controller';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -29,6 +31,12 @@ export default function App() {
             try {
                 await createTables();
                 console.log('SQLite database initialized successfully!');
+                // TEMPORARY TEST: Count records in both tables.
+                const mediaCount = await countMediaRecords();
+                const feedbackCount = await countFeedbackRecords();
+
+                console.log('MediaItem count:', mediaCount);
+                console.log('UserFeedback count:', feedbackCount);
                 setDatabaseReady(true);
             } catch (error) {
                 console.error('Database initialization failed:', error);
