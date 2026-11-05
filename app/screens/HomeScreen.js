@@ -5,7 +5,6 @@
 // Import React and useState for managing the search input.
 import React, { useState } from "react";
 
-<<<<<<< Updated upstream
 // Import React and useState for managing the search input.
 import React, { useState } from "react";
 
@@ -33,32 +32,6 @@ import {
 // Import the shared theme configuration (light and dark mode).
 import { getTheme } from "../styles/theme";
 
-=======
-// Import React Native components.
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Switch,
-  StatusBar,
-  ScrollView,
-  TextInput,
-} from "react-native";
-
-// Import Lucide icons.
-import {
-  Library,
-  PlusCircle,
-  Heart,
-  Clock,
-  Search,
-} from "lucide-react-native";
-
-// Import the shared theme configuration (light and dark mode).
-import { getTheme } from "../styles/theme";
-
->>>>>>> Stashed changes
 export default function HomeScreen({
   // Data passed from the parent component or database.
   totalItems = 0,
