@@ -5,8 +5,6 @@
 // Import React and useState for managing the search input.
 import React, { useState } from "react";
 
-// Import React and useState for managing the search input.
-import React, { useState } from "react";
 
 // Import React Native components.
 import {
