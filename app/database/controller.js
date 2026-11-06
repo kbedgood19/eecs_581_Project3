@@ -31,14 +31,52 @@ export async function countFeedbackRecords() {
 
 // TODO (Jaydine): Create a function to insert a sample media item into the database.
 export async function insertSampleItem() {
-    const db = await getDatabase();
-    // TODO: Execute INSERT statement into MediaItem with dummy data (e.g., test movie or book)
+    const db = await getDatabase(); //open the database
+
+    await db.runAsync( //add the movie type if it does not already exist
+        'INSERT OR IGNORE INTO MediaType (type_name) VALUES (?);',
+        'Movie'
+    );
+
+    const mediaType = await db.getFirstAsync( //get the movie type's id
+        'SELECT type_id FROM MediaType WHERE type_name = ?;',
+        'Movie'
+    );
+
+    await db.runAsync( //add the dvd format for movies if it does not already exist
+        'INSERT OR IGNORE INTO MediaFormat (type_id, format_name) VALUES (?, ?);',
+        mediaType.type_id,
+        'DVD'
+    );
+
+    const mediaFormat = await db.getFirstAsync( //get the dvd format's id
+        'SELECT format_id FROM MediaFormat WHERE type_id = ? AND format_name = ?;',
+        mediaType.type_id,
+        'DVD'
+    );
+
+    const result = await db.runAsync( //insert the sample movie into the database
+        `INSERT INTO MediaItem (type_id, title, genre, releaseYear, format_id)
+         VALUES (?, ?, ?, ?, ?);`,
+        mediaType.type_id, //use the movie type's id
+        'The Lion King', //set the movie title
+        'Animation', //set the genre
+        1994, //set the release year
+        mediaFormat.format_id //use the dvd format's id
+    );
+
+    return result.lastInsertRowId; //return the new item's id so we can retrieve it
 }
 
 // TODO (Jaydine): Create a retrieval function to pull the saved sample item
 // Verify its information perfectly matches the inserted data
 export async function retrieveSampleItem(id) {
-    const db = await getDatabase();
-    // TODO: Execute SELECT * query for the specific item ID
-    // return the row data
+    const db = await getDatabase(); //open the database
+
+    const item = await db.getFirstAsync( //get the media item with the matching id
+        'SELECT * FROM MediaItem WHERE id = ?;',
+        id //use the id passed into the function
+    );
+
+    return item; //return the saved item or null if it was not found
 }
