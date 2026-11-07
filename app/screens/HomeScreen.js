@@ -31,6 +31,7 @@ import {
 import { getTheme } from "../styles/theme";
 
 export default function HomeScreen({
+  navigation, // MARIE: Added for connecting the different screens
   // Data passed from the parent component or database.
   totalItems = 0,
   recentItems = [],
@@ -64,7 +65,9 @@ export default function HomeScreen({
     const query = searchQuery.trim();
 
     if (query.length > 0) {
-      onSearch(query);
+      // onSearch(query);
+      // MARIE: passing query to collection screen
+      navigation.navigate('My Collection', {initialQuery: query});
     }
   };
 
@@ -228,7 +231,9 @@ export default function HomeScreen({
               color={theme.colors.primary}
             />
           }
-          onPress={onNavigateCollection}
+          // MARIE: modified to connect screens
+          //onPress={onNavigateCollection}
+          onPress={() => navigation.navigate('Collection')}
         />
 
         {/* Navigate to the Add Media Screen. */}
@@ -241,7 +246,9 @@ export default function HomeScreen({
               color={theme.colors.primary}
             />
           }
-          onPress={onNavigateAdd}
+          //onPress={onNavigateAdd}
+          // MARIE: modified to connect screens
+          onPress={() => navigation.navigate('AddMedia')}
         />
 
         {/* Navigate to the user's favorite media. */}
