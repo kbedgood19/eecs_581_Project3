@@ -54,7 +54,7 @@ export default function AddMediaScreen({ navigation, isDarkMode = false }) {
 
             <TextInput
                 style={styles.input}
-                placeholder="Media Type (e.g., DVD)"
+                placeholder="Media Type (e.g., Movie, Book)"
                 placeholderTextColor={theme.colors.secondaryText}
                 value={mediaType}
                 onChangeText={setMediaType}
