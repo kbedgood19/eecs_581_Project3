@@ -3,32 +3,63 @@
 // Author: Sabelli Antebi Delmas
 // External Sources: Gemini (Code Template)
 
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-// TODO (Sabelli): Import Lauren's global theme settings (colors, typography) to use in your stylesheet.
+// Import React Native components.
+import { TouchableOpacity, Text, StyleSheet } from "react-native";
 
-// TODO (Sabelli): Build a functional component that accepts 'title' and 'onPress' as props.
-// 'title' will be the text displayed on the button (e.g., "View Collection").
-// 'onPress' will be the navigation routing function passed from the parent screen.
-export default function CustomButton({ /* TODO: Destructure props here */ }) {
+// Import the shared theme configuration (light and dark mode).
+import { getTheme } from "../styles/theme";
+
+// Reusable button used across the app.
+// 'title' is the text shown on the button.
+// 'onPress' is the function that runs when the button is tapped (for example, navigation).
+// 'isDarkMode' selects the light or dark theme, same as the other screens.
+export default function CustomButton({
+    title,
+    onPress = () => {},
+    isDarkMode = false,
+}) {
+  // Select the appropriate theme based on the current dark mode setting.
+    const theme = getTheme(isDarkMode);
+
+  // Generate styles using the selected theme colors.
+    const styles = createStyles(theme);
+
     return (
-        // TODO (Sabelli): Replace this null return with a TouchableOpacity.
-        // 1. Attach the 'button' style object to the TouchableOpacity.
-        // 2. Assign the 'onPress' prop to the TouchableOpacity's onPress event.
-        // 3. Inside the TouchableOpacity, render a Text component.
-        // 4. Render the 'title' prop inside the Text component.
-        // 5. Attach the 'text' style object to the Text component.
-        null
+        <TouchableOpacity
+            style={styles.button}
+            activeOpacity={0.7}
+            onPress={onPress}
+        >
+            <Text style={styles.text}>{title}</Text>
+        </TouchableOpacity>
     );
 }
 
-// TODO (Sabelli): Define the localized styles for this component by pulling from Lauren's global theme.
-const styles = StyleSheet.create({
+//custom button styles
+//createStyles() receives the current theme so the button
+//automatically updates its colors when dark mode changes.
+const createStyles = (theme) =>
+    StyleSheet.create({
+
+    //shape and color of the touch target.
     button: {
-        // TODO: Set backgroundColor using 'colors.light.primaryButton' from Lauren's theme file.
-        // TODO: Add padding, borderRadius, width, and marginVertical to shape the touch target.
+        backgroundColor: theme.colors.primary,
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
+        borderRadius: theme.radius.lg,
+        width: "100%",
+        marginVertical: theme.spacing.sm,
+        alignItems: "center",
+        justifyContent: "center",
     },
+
+    //button text.
+    //'surface' is white in light mode and dark in dark mode,
+    //so the text always has high contrast against the primary color.
     text: {
-        // TODO: Spread or reference the properties from Lauren's 'typography.buttonText' object.
-        // TODO: Ensure the text color provides high contrast against the primary button background.
-    }
-});
+        fontSize: theme.typography.body,
+        fontWeight: "600",
+        color: theme.colors.surface,
+    },
+
+    });
