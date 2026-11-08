@@ -3,11 +3,12 @@
 // Author: Ximena Bustos
 // External Sources: Gemini (Code Template)
 
-import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Alert, StyleSheet } from 'react-native';
 // TODO (Ximena): Once Lauren and Sabelli finish, import { colors, layout, typography } from '../styles/theme';
 // Imports the global light theme
 import { lightTheme } from '../styles/theme';
 // TODO (Ximena): Once finished, import CustomButton from '../components/CustomButton';
+import CustomButton from '../components/CustomButton';
 
 export default function EditMediaScreen({ navigation }) {
     
@@ -62,28 +63,21 @@ export default function EditMediaScreen({ navigation }) {
                 placeholderTextColor={lightTheme.colors.secondaryText}
             />
 
-            {/* Placeholder for saving edited media information. */}
-            <Button
+            {/* Placeholder button for saving changes. */}
+            <CustomButton
                 title="Save Changes"
-                color={lightTheme.colors.primary}
-                onPress={() => {
-                    Alert.alert(
-                        "Not Available"
-                    );
-                }}
+                onPress={() => {}}
             />
 
             {/* Opens the deletion confirmation dialog */}
-            <Button
+            <CustomButton
                 title="Delete Item"
-                color={lightTheme.colors.danger}
                 onPress={confirmDelete}
             />
 
             {/* Returns to the previous screen. */}
-            <Button
+            <CustomButton
                 title="Return to Home"
-                color={lightTheme.colors.primary}
                 onPress={() => navigation.goBack()}
             />
 
