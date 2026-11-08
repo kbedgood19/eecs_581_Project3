@@ -3,49 +3,123 @@
 // Author: Greeshma Kunduri
 // External Sources: Gemini (Code Template)
 
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
-// TODO (Greeshma): Once Lauren and Sabelli finish, import { colors, layout, typography } from '../styles/theme';
-// TODO (Greeshma): Once finished, import CustomButton from '../components/CustomButton';
+import { useState } from 'react';
+import {
+    View,
+    Text,
+    TextInput,
+    StyleSheet,
+    Alert
+} from 'react-native';
 
-export default function AddMediaScreen({ navigation }) {
+import { getTheme } from '../styles/theme';
+import CustomButton from '../components/CustomButton';
+
+export default function AddMediaScreen({ navigation, isDarkMode = false }) {
+
+    const theme = getTheme(isDarkMode);
+    const styles = createStyles(theme);
+
+    const [title, setTitle] = useState('');
+    const [mediaType, setMediaType] = useState('');
+    const [genre, setGenre] = useState('');
+
+    const handleSave = () => {
+        if (!title.trim() || !mediaType.trim() || !genre.trim()) {
+            Alert.alert(
+                'Missing Information',
+                'Please fill in all fields.'
+            );
+            return;
+        }
+
+        Alert.alert(
+            'Success',
+            'Media information entered successfully!'
+        );
+    };
+
     return (
         <View style={styles.container}>
+
             <Text style={styles.header}>Add New Media</Text>
-            
-            {/* TODO (Greeshma): Construct manual entry forms for basic metadata. */}
-            {/* 1. Add a TextInput for "Title" and apply the styles.input object. */}
-            {/* 2. Add a TextInput for "Media Type (e.g., DVD)" and apply styles.input. */}
-            {/* 3. Add a TextInput for "Genre" and apply styles.input. */}
-            
+
+            <TextInput
+                style={styles.input}
+                placeholder="Title"
+                placeholderTextColor={theme.colors.secondaryText}
+                value={title}
+                onChangeText={setTitle}
+            />
+
+            <TextInput
+                style={styles.input}
+                placeholder="Media Type (e.g., DVD)"
+                placeholderTextColor={theme.colors.secondaryText}
+                value={mediaType}
+                onChangeText={setMediaType}
+            />
+
+            <TextInput
+                style={styles.input}
+                placeholder="Genre"
+                placeholderTextColor={theme.colors.secondaryText}
+                value={genre}
+                onChangeText={setGenre}
+            />
+
             <View style={styles.buttonGroup}>
-                {/* TODO (Greeshma): Build the Save and Cancel buttons. */}
-                {/* 1. Add a standard React Native Save <Button>. */}
-                {/* 2. Add a standard Cancel <Button>. Wire its onPress event to trigger navigation.goBack(). */}
-                
-                {/* TODO (Greeshma): When Sabelli's CustomButton is ready, replace your standard <Button /> components using this syntax:
-                    <CustomButton title="Save Item" onPress={() => {}} /> 
-                */}
+
+                <CustomButton
+                    title="Save Item"
+                    onPress={handleSave}
+                    isDarkMode={isDarkMode}
+                />
+
+                <CustomButton
+                    title="Cancel"
+                    onPress={() => navigation.goBack()}
+                    isDarkMode={isDarkMode}
+                />
+
             </View>
+
         </View>
     );
 }
 
-// ============================================================================
-// TODO: THEME INTEGRATION GUIDE
-// When Lauren and Sabelli finish the global theme, integrate it here using:
-// 
-// 1. Direct Assignment (for single properties like colors):
-//    backgroundColor: colors.light.primary,
-//
-// 2. Spread Syntax (for grouped objects like layout or typography):
-//    ...typography.buttonText,
-//    ...layout.container,
-// ============================================================================
+const createStyles = (theme) => StyleSheet.create({
 
-const styles = StyleSheet.create({
-    // TODO (Greeshma): Replace this block with ...layout.container later
-    container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-    header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-    input: { width: '100%', padding: 10, borderWidth: 1, marginBottom: 15 },
-    buttonGroup: { flexDirection: 'row', gap: 15 }
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: theme.spacing.lg,
+        backgroundColor: theme.colors.background
+    },
+
+    header: {
+        fontSize: theme.typography.title,
+        fontWeight: 'bold',
+        marginBottom: theme.spacing.lg,
+        color: theme.colors.text
+    },
+
+    input: {
+        width: '100%',
+        padding: theme.spacing.md,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        borderRadius: theme.radius.sm,
+        marginBottom: theme.spacing.md,
+        color: theme.colors.text,
+        backgroundColor: theme.colors.surface
+    },
+
+    buttonGroup: {
+        width: '100%',
+        flexDirection: 'column',
+        marginTop: theme.spacing.sm
+    }
+
 });
