@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { createTables } from './database/schema';
 import { getDatabase } from './database/database';
+import { supabase } from './database/supabase';
 
 //import database functions for counting records and inserting and retrieving the sample item
 import {
@@ -58,7 +59,16 @@ export default function App() {
                     'SELECT * FROM MediaItem;'
                 );
 
-console.log('Saved media items:', savedMedia);
+                console.log('Saved media items:', savedMedia);
+                // TEMPORARY TEST: Check Supabase connection
+                const { data, error } = await supabase.auth.getSession();
+
+                if (error) {
+                    console.error('Supabase connection test error:', error.message);
+                } else {
+                    console.log('Supabase client initialized!');
+                    console.log('Current session:', data.session ? 'Logged in' : 'Not logged in');
+                }
                 setDatabaseReady(true);
             } catch (error) {
                 console.error('Database initialization failed:', error);
