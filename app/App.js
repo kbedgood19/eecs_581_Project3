@@ -40,10 +40,10 @@ export default function App() {
                 await createTables();
                 console.log('SQLite database initialized successfully!');
 
-                //temporary test for inserting and retrieving the sample item
-                const sampleId = await insertSampleItem(); //insert the sample item
-                const sampleItem = await retrieveSampleItem(sampleId); //retrieve the saved item
-                console.log('saved sample:', sampleItem); //display its values for verification
+                // //temporary test for inserting and retrieving the sample item
+                // const sampleId = await insertSampleItem(); //insert the sample item
+                // const sampleItem = await retrieveSampleItem(sampleId); //retrieve the saved item
+                // console.log('saved sample:', sampleItem); //display its values for verification
 
                 // TEMPORARY TEST: Count records in both tables.
                 const mediaCount = await countMediaRecords();
