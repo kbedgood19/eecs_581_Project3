@@ -3,6 +3,7 @@
 // Author: Greeshma Kunduri
 // External Sources: Gemini (Code Template)
 
+import { addMediaItem } from '../database/controller';
 import { useState } from 'react';
 import {
     View,
@@ -24,20 +25,49 @@ export default function AddMediaScreen({ navigation, isDarkMode = false }) {
     const [mediaType, setMediaType] = useState('');
     const [genre, setGenre] = useState('');
 
-    const handleSave = () => {
-        if (!title.trim() || !mediaType.trim() || !genre.trim()) {
-            Alert.alert(
-                'Missing Information',
-                'Please fill in all fields.'
-            );
-            return;
-        }
+    const handleSave = async () => {
+    if (!title.trim() || !mediaType.trim() || !genre.trim()) {
+        Alert.alert(
+            'Missing Information',
+            'Please fill in all fields.'
+        );
+        return;
+    }
+
+    try {
+        // Save the entered information to SQLite.
+        const mediaId = await addMediaItem(
+            title.trim(),
+            mediaType.trim(),
+            genre.trim()
+        );
+
+        // Show the saved information in the terminal.
+        console.log('Media saved successfully to SQLite!');
+        console.log('Media ID:', mediaId);
+        console.log('Title:', title);
+        console.log('Media Type:', mediaType);
+        console.log('Genre:', genre);
 
         Alert.alert(
             'Success',
-            'Media information entered successfully!'
+            'Media saved successfully!'
         );
-    };
+
+        // Clear the form.
+        setTitle('');
+        setMediaType('');
+        setGenre('');
+
+    } catch (error) {
+        console.error('Error saving media:', error);
+
+        Alert.alert(
+            'Error',
+            'Could not save media to the database.'
+        );
+    }
+};
 
     return (
         <View style={styles.container}>
