@@ -80,3 +80,46 @@ export async function retrieveSampleItem(id) {
 
     return item; //return the saved item or null if it was not found
 }
+// (Kaitlyn): Save a media item entered by the user.
+export async function addMediaItem(title, mediaType, genre) {
+    const db = await getDatabase();
+
+    // Add the media type if it does not already exist.
+    await db.runAsync(
+        'INSERT OR IGNORE INTO MediaType (type_name) VALUES (?);',
+        mediaType
+    );
+
+    // Get the media type ID.
+    const type = await db.getFirstAsync(
+        'SELECT type_id FROM MediaType WHERE type_name = ?;',
+        mediaType
+    );
+
+    // Add a default format for the media item.
+    await db.runAsync(
+        'INSERT OR IGNORE INTO MediaFormat (type_id, format_name) VALUES (?, ?);',
+        type.type_id,
+        'Unspecified'
+    );
+
+    // Get the format ID.
+    const format = await db.getFirstAsync(
+        'SELECT format_id FROM MediaFormat WHERE type_id = ? AND format_name = ?;',
+        type.type_id,
+        'Unspecified'
+    );
+
+    // Insert the media item into SQLite.
+    const result = await db.runAsync(
+        `INSERT INTO MediaItem (type_id, title, genre, format_id)
+         VALUES (?, ?, ?, ?);`,
+        type.type_id,
+        title,
+        genre,
+        format.format_id
+    );
+
+    // Return the ID of the saved item.
+    return result.lastInsertRowId;
+}

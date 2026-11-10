@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { createTables } from './database/schema';
+import { getDatabase } from './database/database';
 
 //import database functions for counting records and inserting and retrieving the sample item
 import {
@@ -40,9 +41,9 @@ export default function App() {
                 console.log('SQLite database initialized successfully!');
 
                 //temporary test for inserting and retrieving the sample item
-                //const sampleId = await insertSampleItem(); //insert the sample item
-                //const sampleItem = await retrieveSampleItem(sampleId); //retrieve the saved item
-                //console.log('saved sample:', sampleItem); //display its values for verification
+                const sampleId = await insertSampleItem(); //insert the sample item
+                const sampleItem = await retrieveSampleItem(sampleId); //retrieve the saved item
+                console.log('saved sample:', sampleItem); //display its values for verification
 
                 // TEMPORARY TEST: Count records in both tables.
                 const mediaCount = await countMediaRecords();
@@ -50,6 +51,14 @@ export default function App() {
 
                 console.log('MediaItem count:', mediaCount);
                 console.log('UserFeedback count:', feedbackCount);
+                // Display all saved media items from SQLite.
+                const db = await getDatabase();
+
+                const savedMedia = await db.getAllAsync(
+                    'SELECT * FROM MediaItem;'
+                );
+
+console.log('Saved media items:', savedMedia);
                 setDatabaseReady(true);
             } catch (error) {
                 console.error('Database initialization failed:', error);
