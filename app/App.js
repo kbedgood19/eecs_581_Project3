@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { createTables } from './database/schema';
 import { getDatabase } from './database/database';
+
 import { supabase } from './database/supabase';
 
 //import database functions for counting records and inserting and retrieving the sample item
