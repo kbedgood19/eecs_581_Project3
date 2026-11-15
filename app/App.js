@@ -28,12 +28,17 @@ import HomeScreen from './screens/HomeScreen';
 import CollectionScreen from './screens/CollectionScreen';
 import AddMediaScreen from './screens/AddMediaScreen';
 import EditMediaScreen from './screens/EditMediaScreen';
+import LoginScreen from './screens/LoginScreen';
+import SignUpScreen from './screens/SignUpScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
     const [databaseReady, setDatabaseReady] = useState(false);
     const [databaseError, setDatabaseError] = useState(null);
+    const [session, setSession] = useState(null);
+    const [authReady, setAuthReady] = useState(false);
 
     // Initialize SQLite when the application starts.
     useEffect(() => {
@@ -79,7 +84,34 @@ export default function App() {
 
         initializeDatabase();
     }, []);
+// Check login status and listen for authentication changes.
+useEffect(() => {
+    let active = true;
 
+    supabase.auth.getSession().then(({ data, error }) => {
+        if (!active) return;
+
+        if (error) {
+            console.error('Session check failed:', error.message);
+        }
+
+        setSession(data.session);
+        setAuthReady(true);
+    });
+
+    const { data: { subscription } } =
+        supabase.auth.onAuthStateChange((_event, newSession) => {
+            if (active) {
+                setSession(newSession);
+                setAuthReady(true);
+            }
+        });
+
+    return () => {
+        active = false;
+        subscription.unsubscribe();
+    };
+}, []);
     // Display an error if the database fails to initialize.
     if (databaseError) {
         return (
@@ -94,8 +126,8 @@ export default function App() {
         );
     }
 
-    // Wait until the database is ready.
-    if (!databaseReady) {
+    // Wait until the database and authenticationis ready.
+    if (!databaseReady || !authReady) {
         return (
             <View style={{
                 flex: 1,
@@ -103,19 +135,29 @@ export default function App() {
                 alignItems: 'center'
             }}>
                 <ActivityIndicator size="large" />
-                <Text>Loading database...</Text>
+                <Text>Loading app...</Text>
             </View>
         );
     }
     
     return (
         <NavigationContainer>
-            <Stack.Navigator initialRouteName="Home">
-                <Stack.Screen name="Home" component={HomeScreen} />
-                <Stack.Screen name="Collection" component={CollectionScreen} />
-                <Stack.Screen name="AddMedia" component={AddMediaScreen} />
-                <Stack.Screen name="EditMedia" component={EditMediaScreen} />
-            </Stack.Navigator>
-        </NavigationContainer>
+        <Stack.Navigator>
+            {session ? (
+                <>
+                    <Stack.Screen name="Home" component={HomeScreen} />
+                    <Stack.Screen name="Collection" component={CollectionScreen} />
+                    <Stack.Screen name="AddMedia" component={AddMediaScreen} />
+                    <Stack.Screen name="EditMedia" component={EditMediaScreen} />
+                </>
+            ) : (
+                <>
+                    <Stack.Screen name="Login" component={LoginScreen} />
+                    <Stack.Screen name="SignUp" component={SignUpScreen} />
+                    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+                </>
+            )}
+        </Stack.Navigator>
+    </NavigationContainer>
     );
 }
