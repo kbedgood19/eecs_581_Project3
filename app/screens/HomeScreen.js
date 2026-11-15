@@ -29,6 +29,7 @@ import {
 
 // Import the shared theme configuration (light and dark mode).
 import { getTheme } from "../styles/theme";
+import { supabase } from "../database/supabase";
 
 export default function HomeScreen({
   navigation, // MARIE: Added for connecting the different screens
@@ -58,6 +59,14 @@ export default function HomeScreen({
 
   // Store the text entered into the search bar.
   const [searchQuery, setSearchQuery] = useState("");
+  // Sign the current user out of Supabase.
+  const handleLogout = async () => {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+      console.error("Logout failed:", error.message);
+  }
+};
 
   // Handle search submission.
   // Remove unnecessary spaces and only search when the input is not empty.
@@ -335,6 +344,13 @@ export default function HomeScreen({
         <Text style={styles.footer}>
           Organize. Collect. Enjoy.
         </Text>
+        {/* ================= LOGOUT ================= */}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+        >
+          <Text style={styles.logoutText}>Log Out</Text>
+        </TouchableOpacity>
 
       </ScrollView>
     </View>
@@ -599,7 +615,20 @@ const createStyles = (theme) =>
       marginTop: 6,
       textAlign: "center",
     },
+    // Logout button.
+    logoutButton: {
+        backgroundColor: theme.colors.primary,
+        padding: 15,
+        borderRadius: theme.radius.md,
+        alignItems: "center",
+        marginTop: 25,
+    },
 
+    logoutText: {
+        color: "#FFFFFF",
+        fontSize: 16,
+        fontWeight: "bold",
+    },
     // Bottom message.
     footer: {
       textAlign: "center",
