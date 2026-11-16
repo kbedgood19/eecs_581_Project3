@@ -55,14 +55,15 @@ export async function insertSampleItem() {
         'DVD'
     );
 
-    const result = await db.runAsync( //insert the sample movie into the database
-        `INSERT INTO MediaItem (type_id, title, genre, releaseYear, format_id)
-         VALUES (?, ?, ?, ?, ?);`,
-        mediaType.type_id, //use the movie type's id
-        'The Lion King', //set the movie title
-        'Animation', //set the genre
-        1994, //set the release year
-        mediaFormat.format_id //use the dvd format's id
+   const result = await db.runAsync( 
+        `INSERT INTO MediaItem (type_id, title, genre, releaseYear, format_id, user_id)
+         VALUES (?, ?, ?, ?, ?, ?);`,
+        mediaType.type_id, 
+        'The Lion King', 
+        'Animation', 
+        1994, 
+        mediaFormat.format_id,
+        'test-user-123' // Dummy user ID to satisfy the NOT NULL constraint
     );
 
     return result.lastInsertRowId; //return the new item's id so we can retrieve it
@@ -80,8 +81,8 @@ export async function retrieveSampleItem(id) {
 
     return item; //return the saved item or null if it was not found
 }
-// (Kaitlyn): Save a media item entered by the user, including subtypes.
-export async function addMediaItem(title, mediaType, genre, releaseYear, subtypeData) {
+// (Kaitlyn): Save a media item entered by the user, including subtypes and new sprint features.
+export async function addMediaItem(title, mediaType, genre, releaseYear, subtypeData, userId, photoUri = null, rating = null, review = null, copyNumber = 1) {
     const db = await getDatabase();
 
     // Add the media type if it does not already exist.
@@ -92,10 +93,11 @@ export async function addMediaItem(title, mediaType, genre, releaseYear, subtype
     await db.runAsync('INSERT OR IGNORE INTO MediaFormat (type_id, format_name) VALUES (?, ?);', type.type_id, 'Unspecified');
     const format = await db.getFirstAsync('SELECT format_id FROM MediaFormat WHERE type_id = ? AND format_name = ?;', type.type_id, 'Unspecified');
 
-    // Insert the main media item into SQLite.
+    // Insert the main media item into SQLite with new columns.
     const result = await db.runAsync(
-        `INSERT INTO MediaItem (type_id, title, genre, releaseYear, format_id) VALUES (?, ?, ?, ?, ?);`,
-        type.type_id, title, genre, releaseYear, format.format_id
+        `INSERT INTO MediaItem (type_id, title, genre, releaseYear, format_id, user_id, photo_uri, rating, review, copy_number) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        type.type_id, title, genre, releaseYear, format.format_id, userId, photoUri, rating, review, copyNumber
     );
 
     const newId = result.lastInsertRowId;
@@ -111,43 +113,53 @@ export async function addMediaItem(title, mediaType, genre, releaseYear, subtype
         await db.runAsync(`INSERT INTO VideoGame (media_id, developer) VALUES (?, ?);`, newId, subtypeData.developer);
     }
 
+    // Sabelli: Insert initial rating/review if provided during creation
+    if (rating !== null || review !== null) {
+        await db.runAsync(
+            `INSERT INTO UserFeedback (media_id, score, reviewText, dateModified) 
+             VALUES (?, ?, ?, CURRENT_DATE);`,
+            newId, rating, review
+        );
+    }
+
     return newId;
 }
 
 // Marie: added to join MediaItem and MediaType tables dynamically for search/filtering
-export async function getMediaCatalog(searchQuery = '', filterType = 'All') {
+// Dynamically join tables for search/filtering, including UserFeedback
+export async function getMediaCatalog(userId, searchQuery = '', filterType = 'All', sortBy = 'title_asc', formatFilter = 'All') {
     const db = await getDatabase();
     
     let query = `
-        SELECT m.id, m.title, m.genre, m.releaseYear, t.type_name
+        SELECT m.id, m.title, m.genre, m.releaseYear, m.photo_uri, t.type_name, mf.format_name, f.score AS rating
         FROM MediaItem m
         JOIN MediaType t ON m.type_id = t.type_id
-        WHERE 1=1
+        LEFT JOIN MediaFormat mf ON m.format_id = mf.format_id
+        LEFT JOIN UserFeedback f ON m.id = f.media_id
+        WHERE m.user_id = ?
     `;
-    const params = [];
+    const params = [userId];
 
-    // Apply search filter if a query exists
     if (searchQuery.trim() !== '') {
         query += ` AND m.title LIKE ?`;
         params.push(`%${searchQuery}%`);
     }
 
-    // Apply category filter if it's not 'All'
     if (filterType !== 'All') {
-        // Map plural UI filter names to singular DB type names
         let dbType = filterType;
         if (filterType === 'Movies') dbType = 'Movie';
         if (filterType === 'Books') dbType = 'Book';
-        if (filterType === 'Video Games') dbType = 'VideoGame'; // Adjust based on exactly how you inserted this type
-
+        if (filterType === 'Video Games') dbType = 'VideoGame'; 
         query += ` AND t.type_name = ?`;
         params.push(dbType);
     }
 
-    // Order alphabetically by title
-    query += ` ORDER BY m.title ASC;`;
+    // Greeshma: Sorting Logic for CollectionScreen
+    if (sortBy === 'title_asc') query += ` ORDER BY m.title ASC;`;
+    else if (sortBy === 'date_added') query += ` ORDER BY m.id DESC;`;
+    else if (sortBy === 'rating_desc') query += ` ORDER BY f.score DESC;`; // Targets the joined table
+    else query += ` ORDER BY m.title ASC;`; 
     
-    // Execute and return array of objects
     const results = await db.getAllAsync(query, params);
     return results;
 }
@@ -157,30 +169,32 @@ export async function getMediaCatalog(searchQuery = '', filterType = 'All') {
 export async function getMediaItemById(id) {
     const db = await getDatabase();
     const item = await db.getFirstAsync(
-        `SELECT m.id, m.title, m.genre, m.releaseYear, t.type_name,
-                mo.director, b.author, mu.artist, v.developer
+        `SELECT m.id, m.title, m.genre, m.releaseYear, m.photo_uri, m.copy_number, t.type_name,
+                mo.director, b.author, mu.artist, v.developer,
+                f.score AS rating, f.reviewText AS review
          FROM MediaItem m
          JOIN MediaType t ON m.type_id = t.type_id
          LEFT JOIN Movie mo ON m.id = mo.media_id
          LEFT JOIN Book b ON m.id = b.media_id
          LEFT JOIN Music mu ON m.id = mu.media_id
          LEFT JOIN VideoGame v ON m.id = v.media_id
+         LEFT JOIN UserFeedback f ON m.id = f.media_id
          WHERE m.id = ?;`,
         id
     );
     return item;
 }
 
-// Update an existing media item and its subtype table
-export async function updateMediaItem(id, title, genre, releaseYear, typeName, subtypeData) {
+// Marie: Update an existing media item, its subtype, and user feedback
+export async function updateMediaItem(id, title, genre, releaseYear, typeName, subtypeData, photoUri, rating, review) {
     const db = await getDatabase();
     
-    // 1. Update the main MediaItem table
+    // 1. Update the main MediaItem table (Notice rating/review are NOT here)
     await db.runAsync(
         `UPDATE MediaItem 
-         SET title = ?, genre = ?, releaseYear = ?
+         SET title = ?, genre = ?, releaseYear = ?, photo_uri = ?
          WHERE id = ?;`,
-        title, genre, releaseYear, id
+        title, genre, releaseYear, photoUri, id
     );
 
     // 2. Use INSERT OR REPLACE. If the item was originally created without 
@@ -194,6 +208,16 @@ export async function updateMediaItem(id, title, genre, releaseYear, typeName, s
     } else if (typeName === 'VideoGame') {
         await db.runAsync(`INSERT OR REPLACE INTO VideoGame (media_id, developer) VALUES (?, ?);`, id, subtypeData.developer || '');
     }
+
+    // Using INSERT OR REPLACE requires the UNIQUE constraint on media_id added to schema.js
+    if (rating !== null || review !== null) {
+        await db.runAsync(
+            `INSERT OR REPLACE INTO UserFeedback (media_id, score, reviewText, dateModified) 
+             VALUES (?, ?, ?, CURRENT_DATE);`,
+            id, rating, review
+        );
+    }
+
 }
 
 
@@ -211,4 +235,23 @@ export async function deleteMediaItem(id) {
     
     // 2. Delete the main media item
     await db.runAsync(`DELETE FROM MediaItem WHERE id = ?;`, id);
+}
+
+
+// Ximena: Helper function to check for existing duplicates before saving
+export async function checkDuplicateMedia(userId, title, typeName) {
+    const db = await getDatabase();
+    
+    // Uses LOWER() and TRIM() to ensure case-insensitive and space-insensitive matching
+    const result = await db.getFirstAsync(
+        `SELECT m.id, m.copy_number 
+         FROM MediaItem m
+         JOIN MediaType t ON m.type_id = t.type_id
+         WHERE m.user_id = ? AND LOWER(TRIM(m.title)) = LOWER(TRIM(?)) AND t.type_name = ?
+         ORDER BY m.copy_number DESC;`,
+        userId, title, typeName
+    );
+    
+    // Returns the record with the highest copy_number if a duplicate exists, otherwise null
+    return result; 
 }

@@ -1,6 +1,5 @@
 // File: app/screens/CollectionScreen.js
 // Purpose: Main catalog view with search, filtering, and media display.
-// Author: Marie Biernacki
 
 import React, { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,10 +14,13 @@ import {
     StatusBar,
     FlatList,
     ActivityIndicator
+    // SPRINT 2 TODO (Jaydine): Import the Image component from 'react-native' here.
 } from 'react-native';
+
+
 import { Search } from 'lucide-react-native';
 import { getTheme } from '../styles/theme';
-import { getMediaCatalog } from '../database/controller'; // <-- Import the new query
+import { getMediaCatalog } from '../database/controller'; 
 
 export default function CollectionScreen({ navigation, route }) {
     const isDarkMode = false;
@@ -29,6 +31,9 @@ export default function CollectionScreen({ navigation, route }) {
 
     const [searchQuery, setSearchQuery] = useState(initialQuery);
     const [activeFilter, setActiveFilter] = useState('All');
+
+    // SPRINT 2 TODO (Greeshma): Declare a state variable for 'sortBy' (default to 'title_asc').
+    // SPRINT 2 TODO (Greeshma): Declare a state variable for 'formatFilter' (default to 'All').
     
     // New state for database data
     const [mediaItems, setMediaItems] = useState([]);
@@ -44,7 +49,11 @@ export default function CollectionScreen({ navigation, route }) {
             async function loadMedia() {
                 setIsLoading(true);
                 try {
-                    const data = await getMediaCatalog(searchQuery, activeFilter);
+                    // SPRINT 2 TODO (Greeshma): Update this controller call to pass your new filter variables.
+                    // Expected argument order: (userId, searchQuery, filterType, sortBy, formatFilter)
+                    // Note: Use 'test-user-123' for the userId until Supabase auth is fully connected!
+
+                    const data = await getMediaCatalog(searchQuery, activeFilter); // <-- UPDATE
                     if (isActive) {
                         setMediaItems(data);
                     }
@@ -65,6 +74,9 @@ export default function CollectionScreen({ navigation, route }) {
                 clearTimeout(delaySearch);
                 isActive = false; // prevents state updates if screen is unmounted
             };
+        
+        // SPRINT 2 TODO (Greeshma): Add your 'sortBy' and 'formatFilter' state variables into this array bracket.
+        // This ensures the screen immediately re-fetches the list whenever a user changes a sort/filter option!
         }, [searchQuery, activeFilter])
     );
 
@@ -74,6 +86,10 @@ export default function CollectionScreen({ navigation, route }) {
             style={styles.card}
             onPress={() => navigation.navigate('EditMedia', { mediaId: item.id })}
         >
+            {/* SPRINT 2 TODO (Jaydine): Wrap the image and the existing text content (cardContent) below inside a row-based container so they sit side-by-side. */}
+            {/* IF item.photo_uri exists: Render the Image component pointing to that URI. */}
+            {/* ELSE: Render a default placeholder view/icon. */}
+
             <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>{item.title}</Text>
                 <View style={styles.cardMeta}>
@@ -90,6 +106,13 @@ export default function CollectionScreen({ navigation, route }) {
                             <Text style={styles.cardSubtext}>{item.releaseYear}</Text>
                         </>
                     )}
+
+                    {/* SPRINT 2 TODO (Sabelli): Conditionally render the user's rating here. */}
+                    {/* IF item.rating is not null: */}
+                    {/*    1. Render a dot separator <Text style={styles.dotSeparator}>•</Text> */}
+                    {/*    2. Render a Text component displaying a star icon and the score (e.g., "★ 4/5"). */}
+                    {/* ELSE: render nothing. */}
+
                 </View>
             </View>
         </TouchableOpacity>
@@ -152,6 +175,11 @@ export default function CollectionScreen({ navigation, route }) {
                     ))}
                 </ScrollView>
             </View>
+
+            {/* SPRINT 2 TODO (Greeshma): Build the UI controls for Sorting and Format Filtering here. */}
+            {/* You can use horizontal ScrollViews with touchable chips (like the media type filters above), */}
+            {/* or standard React Native <Picker> components, or a popup Modal. */}
+            {/* Make sure their values are bound to your 'sortBy' and 'formatFilter' state variables! */}
 
             {/* MEDIA LIST */}
             {isLoading ? (
@@ -251,6 +279,11 @@ const createStyles = (theme) => StyleSheet.create({
         textAlign: 'center',
         lineHeight: 20,
     },
+
+    // SPRINT 2 TODO (Jaydine): Define strict styling for the card image here. 
+    // It requires fixed dimensions (e.g., width: 60, height: 90) and a resize mode of 'cover'.
+    // This ensures that massive, high-resolution camera photos don't break the FlatList layout.
+
     // New Card Styles
     card: {
         backgroundColor: theme.colors.surface,

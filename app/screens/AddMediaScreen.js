@@ -1,10 +1,14 @@
 // File: app/screens/AddMediaScreen.js
 // Purpose: Valid destination target for adding media with manual entry form and dynamic subtypes.
-// Author: Greeshma Kunduri
+
+// SPRINT 2 TODO (Jaydine): Import the Expo image picker and file system libraries
 
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'react-native';
+
+// SPRINT 2 TODO (Ximena): Import checkDuplicateMedia
 import { addMediaItem } from '../database/controller';
+
 import { lightTheme } from '../styles/theme'; // Assuming lightTheme is exported globally like in EditScreen
 import CustomButton from '../components/CustomButton';
 
@@ -24,12 +28,26 @@ export default function AddMediaScreen({ navigation }) {
     const [mediaType, setMediaType] = useState('');
     const [genre, setGenre] = useState('');
     const [releaseYear, setReleaseYear] = useState('');
+
+    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'rating' (default to 0 or null).
+    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'review' (default to an empty string '')
     
     // Subtype fields
     const [director, setDirector] = useState('');
     const [author, setAuthor] = useState('');
     const [artist, setArtist] = useState('');
     const [developer, setDeveloper] = useState('');
+
+    // SPRINT 2 TODO (Jaydine): Declare a state variable to store the selected photo's URI.
+
+    // SPRINT 2 TODO (Jaydine): Create an asynchronous function to handle image selection:
+    // 1. Request media library permissions from the user.
+    // 2. Open the device's image library.
+    // 3. IF the user selects an image (doesn't cancel):
+    //    a. Extract the file name from the temporary image URI.
+    //    b. Define a permanent path using the app's document directory + file name.
+    //    c. Copy the file from the temporary URI to the new permanent path.
+    //    d. Update your photo URI state variable with this permanent path.
 
     const handleSave = async () => {
         if (!title.trim() || !mediaType || !genre || !releaseYear.trim()) {
@@ -51,7 +69,28 @@ export default function AddMediaScreen({ navigation }) {
             developer: developer.trim()
         };
 
+        // SPRINT 2 TODO (Ximena): Rewrite the save flow below to handle duplicate checking.
+        // Note: 'photoUri', 'rating', and 'review' state variables will be added by Jaydine and Sabelli.
+        // You MUST include them in your addMediaItem calls!
+        // Argument order: (title, mediaType, genre, releaseYear, subtypeData, userId, photoUri, rating, review, copyNumber)
+        
         try {
+
+            // 1. Await checkDuplicateMedia('test-user-123', title.trim(), mediaType). 
+
+            // 2. IF a duplicate is found:
+            //   a. Trigger Alert.alert("Duplicate Found", "This item already exists in your collection.")
+            //   b. Add "Cancel" button (aborts save)
+            //   c. Add "Add Anyway" button. Inside its onPress:
+            //      - Calculate new copy number (duplicate.copy_number + 1).
+            //      - Await addMediaItem(title.trim(), mediaType, genre, yearInt, subtypeData, 'test-user-123', photoUri, rating, review, newCopyNumber)
+            //      - Navigate goBack().
+
+            // 3. ELSE (no duplicate):
+            //      - Await addMediaItem(title.trim(), mediaType, genre, yearInt, subtypeData, 'test-user-123', photoUri, rating, review, 1)
+            //      - Show success alert and navigate goBack().
+
+            // SPRINT 2 TODO (Ximena): Remove the below code inside this try block once the above has been implemented.
             const mediaId = await addMediaItem(title.trim(), mediaType, genre, yearInt, subtypeData);
             
             console.log(`\n=== NEW ITEM SAVED: ID ${mediaId} ===`);
@@ -67,6 +106,10 @@ export default function AddMediaScreen({ navigation }) {
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
             <Text style={styles.header}>Add New Media</Text>
+
+            {/* SPRINT 2 TODO (Jaydine): Add a touchable UI element here to trigger the image picker function. */}
+            {/* IF the photo URI state has a value: render the Image component using that URI. */}
+            {/* ELSE: render a placeholder square or camera icon. */}
 
             <Text style={styles.label}>Title</Text>
             <TextInput
@@ -182,6 +225,12 @@ export default function AddMediaScreen({ navigation }) {
                     />
                 </>
             )}
+
+            {/* SPRINT 2 TODO (Sabelli): Build a touchable Star Rating UI component here (1 to 5 stars). */}
+            {/* Bind it to your 'rating' state variable. */}
+            
+            {/* SPRINT 2 TODO (Sabelli): Build a multiline <TextInput> below the stars for the written review. */}
+            {/* Bind it to your 'review' state variable. */}
 
             <View style={styles.buttonGroup}>
                 <CustomButton title="Save Item" onPress={handleSave} />
