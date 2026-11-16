@@ -75,7 +75,7 @@ export async function createTables() {
     await db.execAsync(`
         CREATE TABLE IF NOT EXISTS UserFeedback (
             feedback_id INTEGER PRIMARY KEY,
-            media_id INTEGER NOT NULL,
+            media_id INTEGER NOT NULL UNIQUE, -- ADDED UNIQUE CONSTRAINT HERE
             score INTEGER CHECK (score BETWEEN 1 AND 5),
             reviewText TEXT,
             dateModified TEXT DEFAULT CURRENT_DATE,

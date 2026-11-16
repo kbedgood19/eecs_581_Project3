@@ -1,6 +1,7 @@
 // File: app/screens/EditMediaScreen.js
 // Purpose: Valid destination target for editing media details with functional backward navigation.
-// Author: Ximena Bustos & Marie Biernacki
+
+// SPRINT 2 TODO (Jaydine): Import the Expo image picker, file system, and Image components.
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Alert, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
@@ -24,6 +25,9 @@ export default function EditMediaScreen({ route, navigation }) {
     const [genre, setGenre] = useState('');
     const [releaseYear, setReleaseYear] = useState('');
     const [mediaType, setMediaType] = useState('');
+
+    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'rating'
+    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'review'
     
     // Subtype fields
     const [director, setDirector] = useState('');
@@ -32,6 +36,8 @@ export default function EditMediaScreen({ route, navigation }) {
     const [developer, setDeveloper] = useState('');
 
     const [isLoading, setIsLoading] = useState(true);
+
+    // SPRINT 2 TODO (Jaydine): Declare a state variable to hold the photo URI.
 
     useEffect(() => {
         async function loadMediaDetails() {
@@ -55,6 +61,13 @@ export default function EditMediaScreen({ route, navigation }) {
                     setAuthor(item.author != null ? item.author : '');
                     setArtist(item.artist != null ? item.artist : '');
                     setDeveloper(item.developer != null ? item.developer : '');
+
+                    // SPRINT 2 TODO (Jaydine): If item.photo_uri exists, 
+                    // update the photo URI state variable so the existing image loads.
+
+                    // SPRINT 2 TODO (Sabelli): Check if item.rating exists. If so, update your rating state.
+                    // SPRINT 2 TODO (Sabelli): Check if item.review exists. If so, update your review state.
+
                 }
             } catch (error) {
                 console.error("Failed to load item:", error);
@@ -65,6 +78,8 @@ export default function EditMediaScreen({ route, navigation }) {
         }
         loadMediaDetails();
     }, [mediaId]);
+
+    // SPRINT 2 TODO (Jaydine): Implement the same asynchronous image picker function used in AddMediaScreen here.
 
     const handleSave = async () => {
         if (!title.trim() || !genre || !releaseYear.trim()) {
@@ -86,7 +101,27 @@ export default function EditMediaScreen({ route, navigation }) {
             developer: developer.trim()
         };
 
+        // SPRINT 2 TODO (Ximena): Rewrite the save flow below to handle duplicate checking.
+        // Note: 'photoUri', 'rating', and 'review' state variables will be added by Jaydine and Sabelli.
+        // You MUST include them as the 7th, 8th, and 9th arguments in your update calls!
+        // Argument order: (id, title, genre, releaseYear, typeName, subtypeData, photoUri, rating, review)
+
         try {
+
+            // 1. Await checkDuplicateMedia('test-user-123', title.trim(), mediaType).
+
+            // 2. IF duplicate found AND duplicate.id !== mediaId:
+            //   a. Trigger Alert.alert("Duplicate Found", "Another item with this title already exists.")
+            //   b. Add "Cancel" button (aborts update)
+            //   c. Add "Update Anyway" button. Inside its onPress:
+            //      - Await updateMediaItem(mediaId, title.trim(), genre, yearInt, mediaType, subtypeData, photoUri, rating, review)
+            //      - Navigate goBack().
+
+            // 3. ELSE (no duplicate found, or the match is this exact item):
+            //      - Await updateMediaItem(mediaId, title.trim(), genre, yearInt, mediaType, subtypeData, photoUri, rating, review)
+            //      - Show success alert and navigate goBack().
+
+            // SPRINT 2 TODO (Ximena): Remove the below code inside this try block once the above has been implemented.
             await updateMediaItem(mediaId, title.trim(), genre, yearInt, mediaType, subtypeData);
             Alert.alert("Success", "Media item updated successfully.", [
                 { text: "OK", onPress: () => navigation.goBack() }
@@ -146,6 +181,9 @@ export default function EditMediaScreen({ route, navigation }) {
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
             <Text style={styles.header}>Edit {mediaType}</Text>
             
+            {/* SPRINT 2 TODO (Jaydine): Insert the touchable image picker UI here. */}
+            {/* Ensure it displays the currently saved photo URI state so the user sees their existing image! */}
+
             <Text style={styles.label}>Title</Text>
             <TextInput
                 style={styles.input}
@@ -241,6 +279,9 @@ export default function EditMediaScreen({ route, navigation }) {
                     />
                 </>
             )}
+
+            {/* SPRINT 2 TODO (Sabelli): Insert your Star Rating UI and multiline TextInput here. */}
+            {/* Ensure they display the currently saved rating and review state variables so the user sees their existing feedback! */}
 
             <View style={styles.buttonContainer}>
                 <CustomButton
