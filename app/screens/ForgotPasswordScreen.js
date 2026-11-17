@@ -2,6 +2,7 @@
 // File: app/screens/ForgotPasswordScreen.js
 // Purpose: Allow users to request a password reset through Supabase.
 
+import * as Linking from 'expo-linking';
 import React, { useState } from 'react';
 import {
     View,
@@ -30,8 +31,12 @@ export default function ForgotPasswordScreen({ navigation }) {
         setLoading(true);
 
         try {
+            console.log('Password reset redirect:', Linking.createURL('reset-password'));
             const { error } = await supabase.auth.resetPasswordForEmail(
-                email.trim()
+                email.trim(),
+                {
+                    redirectTo: Linking.createURL('reset-password')
+                }
             );
 
             if (error) {
