@@ -2,6 +2,7 @@
   "expo": {
     "name": "app",
     "slug": "app",
+    "scheme": "mediacatalog",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
