@@ -32,6 +32,9 @@ export default function CollectionScreen({ navigation, route }) {
     const [searchQuery, setSearchQuery] = useState(initialQuery);
     const [activeFilter, setActiveFilter] = useState('All');
 
+    const [sortBy, setSortBy] = useState('title_asc');
+    const [formatFilter, setFormatFilter] = useState('All');
+
     // SPRINT 2 TODO (Greeshma): Declare a state variable for 'sortBy' (default to 'title_asc').
     // SPRINT 2 TODO (Greeshma): Declare a state variable for 'formatFilter' (default to 'All').
     
@@ -40,6 +43,14 @@ export default function CollectionScreen({ navigation, route }) {
     const [isLoading, setIsLoading] = useState(true);
 
     const filters = ['All', 'Movies', 'Music', 'Books', 'Video Games'];
+
+    const sortOptions = [
+        { label: 'Title A-Z', value: 'title_asc' },
+        { label: 'Newest', value: 'date_added' },
+        { label: 'Highest Rated', value: 'rating_desc' }
+    ];
+
+const formatOptions = ['All', 'DVD', 'Blu-ray', 'Digital', 'Unspecified'];
 
     // Re-fetch data whenever the screen comes into focus OR filters change
     useFocusEffect(
@@ -53,10 +64,13 @@ export default function CollectionScreen({ navigation, route }) {
                     // Expected argument order: (userId, searchQuery, filterType, sortBy, formatFilter)
                     // Note: Use 'test-user-123' for the userId until Supabase auth is fully connected!
 
-                    const data = await getMediaCatalog(searchQuery, activeFilter); // <-- UPDATE
-                    if (isActive) {
-                        setMediaItems(data);
-                    }
+                    const data = await getMediaCatalog(
+                        'test-user-123',
+                        searchQuery,
+                        activeFilter,
+                        sortBy,
+                        formatFilter
+                    );
                 } catch (error) {
                     console.error("Failed to fetch media:", error);
                 } finally {
@@ -77,7 +91,7 @@ export default function CollectionScreen({ navigation, route }) {
         
         // SPRINT 2 TODO (Greeshma): Add your 'sortBy' and 'formatFilter' state variables into this array bracket.
         // This ensures the screen immediately re-fetches the list whenever a user changes a sort/filter option!
-        }, [searchQuery, activeFilter])
+        }, [searchQuery, activeFilter, sortBy, formatFilter])
     );
 
     // UI for a single media item card
@@ -177,6 +191,33 @@ export default function CollectionScreen({ navigation, route }) {
             </View>
 
             {/* SPRINT 2 TODO (Greeshma): Build the UI controls for Sorting and Format Filtering here. */}
+            {/* SORTING OPTIONS */}
+            <View style={styles.filterSection}>
+                <Text style={styles.sectionLabel}>Sort by</Text>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.filterScroll}
+                >
+                    {sortOptions.map((option) => (
+                        <TouchableOpacity
+                            key={option.value}
+                            style={[
+                                styles.filterChip,
+                                sortBy === option.value && styles.activeFilterChip
+                            ]}
+                            onPress={() => setSortBy(option.value)}
+                        >
+                            <Text style={[
+                                styles.filterText,
+                                sortBy === option.value && styles.activeFilterText
+                            ]}>
+                                {option.label}
+                            </Text>
+                        </TouchableOpacity>
+                     ))}
+                 </ScrollView>
+             </View>
             {/* You can use horizontal ScrollViews with touchable chips (like the media type filters above), */}
             {/* or standard React Native <Picker> components, or a popup Modal. */}
             {/* Make sure their values are bound to your 'sortBy' and 'formatFilter' state variables! */}
