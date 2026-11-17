@@ -111,6 +111,11 @@ export default function App() {
     // Handle password reset links opened through Expo Go.
     useEffect(() => {
         const handlePasswordResetLink = async (url) => {
+            console.log('Password reset link received:', {
+                hasUrl: !!url,
+                hasResetPath: url?.includes('reset-password'),
+                hasFragment: url?.includes('#')
+            });
             if (!url || !url.includes('reset-password')) {
                 return;
             }
@@ -129,10 +134,17 @@ export default function App() {
                 const refreshToken = params.get('refresh_token');
                 const type = params.get('type');
 
+                            
                 if (type !== 'recovery' || !accessToken || !refreshToken) {
+                    console.log('Recovery link check:', {
+                        type,
+                        hasAccessToken: !!accessToken,
+                        hasRefreshToken: !!refreshToken
+                    });
                     console.log('Invalid password recovery link.');
                     return;
                 }
+
 
                 const { error } = await supabase.auth.setSession({
                     access_token: accessToken,
