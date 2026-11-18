@@ -3,7 +3,8 @@
 // Author: Lauren Lee
 
 // Import React and useState for managing the search input.
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 
 
 // Import React Native components.
@@ -30,6 +31,9 @@ import {
 // Import the shared theme configuration (light and dark mode).
 import { getTheme } from "../styles/theme";
 import { supabase } from "../database/supabase";
+
+// SUPABASE INTEGRATION
+import { getMediaCatalog } from "../database/supabaseController";
 
 export default function HomeScreen({
   navigation, // MARIE: Added for connecting the different screens
@@ -59,6 +63,41 @@ export default function HomeScreen({
 
   // Store the text entered into the search bar.
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Marie: SUPABASE INTEGRATION
+  const [catalogItems, setCatalogItems] = useState([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      async function loadDashboardData() {
+        try {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          if (error || !user) return;
+
+          // fetch items ordered newest first for the recently added section
+          const items = await getMediaCatalog(user.id, '', 'All', 'date_added');
+          if (isActive) {
+            setCatalogItems(items);
+          }
+        } catch (err) {
+          console.error("Failed to load home screen media:", err);
+        }
+      }
+
+      loadDashboardData();
+
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
+
+  // Marie: SUPABASE INTEGRATION
+  const displayTotal = catalogItems.length;
+  const displayRecent = catalogItems.slice(0, 3);
+  
   // Sign the current user out of Supabase.
   const handleLogout = async () => {
   const { error } = await supabase.auth.signOut();
@@ -76,7 +115,7 @@ export default function HomeScreen({
     if (query.length > 0) {
       // onSearch(query);
       // MARIE: passing query to collection screen
-      navigation.navigate('My Collection', {initialQuery: query});
+      navigation.navigate('Collection', {initialQuery: query});
     }
   };
 
@@ -182,8 +221,9 @@ export default function HomeScreen({
           </View>
 
           <View style={styles.summaryInfo}>
+            {/* Marie: changed to displayTotal*/}
             <Text style={styles.summaryNumber}>
-              {totalItems}
+              {displayTotal}
             </Text>
 
             <Text style={styles.summaryLabel}>
@@ -280,10 +320,10 @@ export default function HomeScreen({
             Recently Added
           </Text>
 
-          {/* Show View All only when there are recent items. */}
-          {recentItems.length > 0 && (
+          {/* Marie: SUPABASE INTEGRATION */}
+          {displayRecent.length > 0 && (
             <TouchableOpacity
-              onPress={onNavigateRecent}
+              onPress={() => navigation.navigate('Collection')}
               activeOpacity={0.7}
             >
               <Text style={styles.viewAll}>
@@ -293,16 +333,15 @@ export default function HomeScreen({
           )}
         </View>
 
-        {/* Display recent media if available; otherwise show an empty state. */}
-        {recentItems.length > 0 ? (
-          recentItems.slice(0, 3).map((item) => (
+        {/* Marie: SUPABASE INTEGRATION */}
+        {displayRecent.length > 0 ? (
+          displayRecent.map((item) => (
             <TouchableOpacity
               key={item.id}
               style={styles.recentCard}
               activeOpacity={0.7}
-              onPress={() => onNavigateCollection(item.id)}
+              onPress={() => navigation.navigate('EditMedia', { mediaId: item.id })}
             >
-              {/* Clock icon represents recently added items. */}
               <View style={styles.recentIcon}>
                 <Clock
                   size={22}
@@ -310,25 +349,24 @@ export default function HomeScreen({
                 />
               </View>
 
-              {/* Display the media title, type, and format. */}
               <View style={styles.actionInfo}>
                 <Text style={styles.actionTitle}>
                   {item.title}
                 </Text>
 
                 <Text style={styles.actionDescription}>
-                  {item.mediaType || item.type || "Media"}
+                  {item.type_name || "Media"}
                   {" · "}
-                  {item.format || "Format not specified"}
+                  {item.format_name && item.format_name !== "Unspecified"
+                    ? item.format_name
+                    : "Format not specified"}
                 </Text>
               </View>
 
-              {/* Selecting an item opens it through the collection navigation callback. */}
               <Text style={styles.arrow}>›</Text>
             </TouchableOpacity>
           ))
         ) : (
-          // Empty state shown when the user has not added any media yet.
           <View style={styles.emptyRecent}>
             <Text style={styles.emptyText}>
               No media added yet.
@@ -356,6 +394,8 @@ export default function HomeScreen({
     </View>
   );
 }
+
+
 
 /* ================= HOME SCREEN STYLES ================= */
 

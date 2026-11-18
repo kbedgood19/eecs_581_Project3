@@ -2,12 +2,15 @@
 // Purpose: Valid destination target for adding media with manual entry form and dynamic subtypes.
 
 // SPRINT 2 TODO (Jaydine): Import the Expo image picker and file system libraries
+// NOTE: FileSystem.documentDirectory saves images locally on the device,
+// so photo_uri will only display on the /same phone/ where the item was added (can be changed in the future)
 
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'react-native';
 
-// SPRINT 2 TODO (Ximena): Import checkDuplicateMedia
-import { addMediaItem } from '../database/controller';
+// SPRINT 2 TODO (Ximena): Import checkDuplicateMedia from '../database/supabaseController'
+import { addMediaItem } from '../database/supabaseController';
+import { supabase } from '../database/supabase';
 
 import { lightTheme } from '../styles/theme'; // Assuming lightTheme is exported globally like in EditScreen
 import CustomButton from '../components/CustomButton';
@@ -22,14 +25,24 @@ const GENRE_MAP = {
     VideoGame: ['Action', 'RPG', 'Shooter', 'Strategy', 'Sports', 'Puzzle', 'Platformer']
 };
 
+// FORMAT INTEGRATION
+// physical format options mapped by media type
+const FORMAT_MAP = {
+    Movie: ['DVD', 'Blu-ray', '4K UHD', 'VHS'],
+    Book: ['Hardcover', 'Paperback'],
+    Music: ['Vinyl', 'CD', 'Cassette'],
+    VideoGame: ['Disc', 'Cartridge']
+};
+
 export default function AddMediaScreen({ navigation }) {
     // Main fields
     const [title, setTitle] = useState('');
     const [mediaType, setMediaType] = useState('');
     const [genre, setGenre] = useState('');
+    const [format, setFormat] = useState('');
     const [releaseYear, setReleaseYear] = useState('');
 
-    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'rating' (default to 0 or null).
+    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'rating' (default to null (NOT 0)).
     // SPRINT 2 TODO (Sabelli): Declare a state variable for 'review' (default to an empty string '')
     
     // Subtype fields
@@ -66,32 +79,40 @@ export default function AddMediaScreen({ navigation }) {
             director: director.trim(),
             author: author.trim(),
             artist: artist.trim(),
-            developer: developer.trim()
+            developer: developer.trim(),
+            format: format || 'Unspecified'
         };
 
-        // SPRINT 2 TODO (Ximena): Rewrite the save flow below to handle duplicate checking.
-        // Note: 'photoUri', 'rating', and 'review' state variables will be added by Jaydine and Sabelli.
-        // You MUST include them in your addMediaItem calls!
-        // Argument order: (title, mediaType, genre, releaseYear, subtypeData, userId, photoUri, rating, review, copyNumber)
-        
         try {
 
-            // 1. Await checkDuplicateMedia('test-user-123', title.trim(), mediaType). 
+            // retrieve currntly authenticated user from supabase
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+            if (userError || !user) {
+                Alert.alert('Authentication Error', 'You must be logged in to save media.');
+                return;
+            }
+            // SPRINT 2 TODO (Ximena): Rewrite the save flow below to handle duplicate checking.
+            // Note: 'photoUri', 'rating', and 'review' state variables will be added by Jaydine and Sabelli.
+            // You MUST include them in your addMediaItem calls!
+            // Argument order: (title, mediaType, genre, releaseYear, subtypeData, userId, photoUri, rating, review, copyNumber)
+            
+            // 1. Await checkDuplicateMedia(user.id, title.trim(), mediaType).
 
             // 2. IF a duplicate is found:
             //   a. Trigger Alert.alert("Duplicate Found", "This item already exists in your collection.")
             //   b. Add "Cancel" button (aborts save)
             //   c. Add "Add Anyway" button. Inside its onPress:
             //      - Calculate new copy number (duplicate.copy_number + 1).
-            //      - Await addMediaItem(title.trim(), mediaType, genre, yearInt, subtypeData, 'test-user-123', photoUri, rating, review, newCopyNumber)
+            //      - Await addMediaItem(title.trim(), mediaType, genre, yearInt, subtypeData, user.id, photoUri, rating, review, newCopyNumber)
             //      - Navigate goBack().
 
             // 3. ELSE (no duplicate):
-            //      - Await addMediaItem(title.trim(), mediaType, genre, yearInt, subtypeData, 'test-user-123', photoUri, rating, review, 1)
+            //      - Await addMediaItem(title.trim(), mediaType, genre, yearInt, subtypeData, user.id, photoUri, rating, review, 1)
             //      - Show success alert and navigate goBack().
 
             // SPRINT 2 TODO (Ximena): Remove the below code inside this try block once the above has been implemented.
-            const mediaId = await addMediaItem(title.trim(), mediaType, genre, yearInt, subtypeData);
+            const mediaId = await addMediaItem(title.trim(), mediaType, genre, yearInt, subtypeData, user.id);
             
             console.log(`\n=== NEW ITEM SAVED: ID ${mediaId} ===`);
             Alert.alert('Success', 'Media saved successfully!', [
@@ -130,6 +151,7 @@ export default function AddMediaScreen({ navigation }) {
                             onPress={() => {
                                 setMediaType(type);
                                 setGenre(''); // Clear the genre if the media type changes
+                                setFormat(''); // clear the format if the media type changes
                             }}
                         >
                             <Text style={[styles.chipText, mediaType === type && styles.activeChipText]}>
@@ -152,6 +174,30 @@ export default function AddMediaScreen({ navigation }) {
                             >
                                 <Text style={[styles.chipText, genre === g && styles.activeChipText]}>
                                     {g}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                ) : (
+                    <Text style={{ marginLeft: 4, color: lightTheme.colors.secondaryText, fontStyle: 'italic' }}>
+                        Please select a Media Type first.
+                    </Text>
+                )}
+            </View>
+
+            {/* FORMAT INTEGRATION */}
+            <Text style={styles.label}>Format</Text>
+            <View style={styles.chipContainer}>
+                {mediaType ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+                        {FORMAT_MAP[mediaType].map((f) => (
+                            <TouchableOpacity
+                                key={f}
+                                style={[styles.chip, format === f && styles.activeChip]}
+                                onPress={() => setFormat(f)}
+                            >
+                                <Text style={[styles.chipText, format === f && styles.activeChipText]}>
+                                    {f}
                                 </Text>
                             </TouchableOpacity>
                         ))}
