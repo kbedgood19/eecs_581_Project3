@@ -20,7 +20,10 @@ import {
 
 import { Search } from 'lucide-react-native';
 import { getTheme } from '../styles/theme';
-import { getMediaCatalog } from '../database/controller'; 
+
+// Marie: SUPABASE INTEGRATION
+import { getMediaCatalog } from '../database/supabaseController';
+import { supabase } from '../database/supabase';
 
 export default function CollectionScreen({ navigation, route }) {
     const isDarkMode = false;
@@ -49,11 +52,23 @@ export default function CollectionScreen({ navigation, route }) {
             async function loadMedia() {
                 setIsLoading(true);
                 try {
+                    // Marie: SUPABASE INTEGRATION
+                    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+                    if (userError || !user) {
+                        console.error("No logged-in user found:", userError?.message);
+                        if (isActive) {
+                            setMediaItems([]);
+                        }
+                        return;
+                    }
+                    
                     // SPRINT 2 TODO (Greeshma): Update this controller call to pass your new filter variables.
                     // Expected argument order: (userId, searchQuery, filterType, sortBy, formatFilter)
-                    // Note: Use 'test-user-123' for the userId until Supabase auth is fully connected!
+                    // Keep user.id as the first argument!
 
-                    const data = await getMediaCatalog(searchQuery, activeFilter); // <-- UPDATE
+                    // SUPABASE INTEGRATION
+                    const data = await getMediaCatalog(user.id, searchQuery, activeFilter);
                     if (isActive) {
                         setMediaItems(data);
                     }

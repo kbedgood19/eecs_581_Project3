@@ -7,7 +7,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Alert, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
 import { lightTheme } from '../styles/theme';
 import CustomButton from '../components/CustomButton';
-import { getMediaItemById, updateMediaItem, deleteMediaItem, getMediaCatalog } from '../database/controller';
+
+// Marie: SUPABASE INTEGRATION
+// SPRINT 2 TODO (Ximena): Also import checkDuplicateMedia from '../database/supabaseController'
+import { getMediaItemById, updateMediaItem, deleteMediaItem, getMediaCatalog } from '../database/supabaseController';
+import { supabase } from '../database/supabase';
 
 // GENRE_MAP based on if the item is a movie, book, music, or a video game
 const GENRE_MAP = {
@@ -17,17 +21,27 @@ const GENRE_MAP = {
     VideoGame: ['Action', 'RPG', 'Shooter', 'Strategy', 'Sports', 'Puzzle', 'Platformer']
 };
 
+// FORMAT INTEGRATION
+// physical format options mapped by media type
+const FORMAT_MAP = {
+    Movie: ['DVD', 'Blu-ray', '4K UHD', 'VHS'],
+    Book: ['Hardcover', 'Paperback'],
+    Music: ['Vinyl', 'CD', 'Cassette'],
+    VideoGame: ['Disc', 'Cartridge']
+};
+
 export default function EditMediaScreen({ route, navigation }) {
     const { mediaId } = route.params;
 
     // Main fields
     const [title, setTitle] = useState('');
     const [genre, setGenre] = useState('');
+    const [format, setFormat] = useState('');
     const [releaseYear, setReleaseYear] = useState('');
     const [mediaType, setMediaType] = useState('');
 
-    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'rating'
-    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'review'
+    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'rating' (default to null)
+    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'review' (default to empty string)
     
     // Subtype fields
     const [director, setDirector] = useState('');
@@ -51,6 +65,7 @@ export default function EditMediaScreen({ route, navigation }) {
                 if (item) {
                     setTitle(item.title || '');
                     setGenre(item.genre || '');
+                    setFormat(item.format_name && item.format_name !== 'Unspecified' ? item.format_name : '');
                     setMediaType(item.type_name || '');
                     
                     // Explicit null checks ensure numbers parse correctly
@@ -98,18 +113,30 @@ export default function EditMediaScreen({ route, navigation }) {
             director: director.trim(),
             author: author.trim(),
             artist: artist.trim(),
-            developer: developer.trim()
+            developer: developer.trim(),
+            format: format
         };
 
-        // SPRINT 2 TODO (Ximena): Rewrite the save flow below to handle duplicate checking.
-        // Note: 'photoUri', 'rating', and 'review' state variables will be added by Jaydine and Sabelli.
-        // You MUST include them as the 7th, 8th, and 9th arguments in your update calls!
-        // Argument order: (id, title, genre, releaseYear, typeName, subtypeData, photoUri, rating, review)
+        
 
         try {
 
-            // 1. Await checkDuplicateMedia('test-user-123', title.trim(), mediaType).
+            // Marie: SUPABASE INTEGRATION
+            // retrieve currently authenticated user from supabase
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            
+            if (userError || !user) {
+                Alert.alert('Authentication Error', 'You must be logged in to save media.');
+                return;
+            }
 
+            // SPRINT 2 TODO (Ximena): Rewrite the save flow below to handle duplicate checking.
+            // Note: 'photoUri', 'rating', and 'review' state variables will be added by Jaydine and Sabelli.
+            // You MUST include them as the 7th, 8th, and 9th arguments in your update calls!
+            // Argument order: (id, title, genre, releaseYear, typeName, subtypeData, photoUri, rating, review)
+
+            // 1. Await checkDuplicateMedia(user.id, title.trim(), mediaType).
+            
             // 2. IF duplicate found AND duplicate.id !== mediaId:
             //   a. Trigger Alert.alert("Duplicate Found", "Another item with this title already exists.")
             //   b. Add "Cancel" button (aborts update)
@@ -143,14 +170,24 @@ export default function EditMediaScreen({ route, navigation }) {
                     style: "destructive",
                     onPress: async () => {
                         try {
+                            
+                            // Marie: SUPABASE INTEGRATION
+                            const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+                            if (userError || !user) {
+                                Alert.alert("Authentication Error", "You must be logged in to delete media.");
+                                return;
+                            }
+                            
                             // Call the database function
                             await deleteMediaItem(mediaId);
 
                             // Log the deletion confirmation
                             console.log(`\n=== ITEM DELETED: ID ${mediaId} ===`);
                             
-                            // Fetch the updated database and log it to the terminal
-                            const updatedCatalog = await getMediaCatalog();
+                            // SUPABASE INTEGRATION
+                            // Fetch the updated database for the logged-in user and log it to the terminal
+                            const updatedCatalog = await getMediaCatalog(user.id);
                             console.log("Updated Database Catalog:");
                             console.log(JSON.stringify(updatedCatalog, null, 2));
                             console.log("===================================\n");
@@ -211,6 +248,30 @@ export default function EditMediaScreen({ route, navigation }) {
                                 genre === g && styles.activeChipText
                             ]}>
                                 {g}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
+
+            {/* FORMAT INTEGRATION */}
+            <Text style={styles.label}>Format</Text>
+            <View style={styles.chipContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+                    {(FORMAT_MAP[mediaType] || []).map((f) => (
+                        <TouchableOpacity
+                            key={f}
+                            style={[
+                                styles.chip,
+                                format === f && styles.activeChip
+                            ]}
+                            onPress={() => setFormat(f)}
+                        >
+                            <Text style={[
+                                styles.chipText,
+                                format === f && styles.activeChipText
+                            ]}>
+                                {f}
                             </Text>
                         </TouchableOpacity>
                     ))}
