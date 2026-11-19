@@ -13,8 +13,9 @@ import {
     ScrollView,
     StatusBar,
     FlatList,
-    ActivityIndicator
+    ActivityIndicator,
     // SPRINT 2 TODO (Jaydine): Import the Image component from 'react-native' here.
+    Image
 } from 'react-native';
 
 
@@ -97,7 +98,7 @@ export default function CollectionScreen({ navigation, route }) {
 
     // UI for a single media item card
     const renderMediaCard = ({ item }) => (
-        <TouchableOpacity 
+        <TouchableOpacity
             style={styles.card}
             onPress={() => navigation.navigate('EditMedia', { mediaId: item.id })}
         >
@@ -105,29 +106,46 @@ export default function CollectionScreen({ navigation, route }) {
             {/* IF item.photo_uri exists: Render the Image component pointing to that URI. */}
             {/* ELSE: Render a default placeholder view/icon. */}
 
-            <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <View style={styles.cardMeta}>
-                    <Text style={styles.cardTypeText}>{item.type_name}</Text>
-                    {item.genre && (
-                        <>
-                            <Text style={styles.dotSeparator}>•</Text>
-                            <Text style={styles.cardSubtext}>{item.genre}</Text>
-                        </>
-                    )}
-                    {item.releaseYear && (
-                        <>
-                            <Text style={styles.dotSeparator}>•</Text>
-                            <Text style={styles.cardSubtext}>{item.releaseYear}</Text>
-                        </>
-                    )}
+            <View style={styles.cardRow}>
+                {item.photo_uri ? (
+                    <Image
+                        source={{ uri: item.photo_uri }}
+                        style={styles.cardImage}
+                        resizeMode="cover"
+                        accessibilityLabel={`Photo of ${item.title}`}
+                    />
+                ) : (
+                    <View style={styles.cardImagePlaceholder}>
+                        <Text style={styles.placeholderText}>No Photo</Text>
+                    </View>
+                )}
 
-                    {/* SPRINT 2 TODO (Sabelli): Conditionally render the user's rating here. */}
-                    {/* IF item.rating is not null: */}
-                    {/*    1. Render a dot separator <Text style={styles.dotSeparator}>•</Text> */}
-                    {/*    2. Render a Text component displaying a star icon and the score (e.g., "★ 4/5"). */}
-                    {/* ELSE: render nothing. */}
+                <View style={styles.cardContent}>
+                    <Text style={styles.cardTitle}>{item.title}</Text>
 
+                    <View style={styles.cardMeta}>
+                        <Text style={styles.cardTypeText}>{item.type_name}</Text>
+
+                        {item.genre && (
+                            <>
+                                <Text style={styles.dotSeparator}>•</Text>
+                                <Text style={styles.cardSubtext}>{item.genre}</Text>
+                            </>
+                        )}
+
+                        {item.releaseYear && (
+                            <>
+                                <Text style={styles.dotSeparator}>•</Text>
+                                <Text style={styles.cardSubtext}>{item.releaseYear}</Text>
+                            </>
+                        )}
+
+                        {/* SPRINT 2 TODO (Sabelli): Conditionally render the user's rating here. */}
+                        {/* IF item.rating is not null: */}
+                        {/*    1. Render a dot separator <Text style={styles.dotSeparator}>•</Text> */}
+                        {/*    2. Render a Text component displaying a star icon and the score (e.g., "★ 4/5"). */}
+                        {/* ELSE: render nothing. */}
+                    </View>
                 </View>
             </View>
         </TouchableOpacity>
@@ -298,6 +316,32 @@ const createStyles = (theme) => StyleSheet.create({
     // SPRINT 2 TODO (Jaydine): Define strict styling for the card image here. 
     // It requires fixed dimensions (e.g., width: 60, height: 90) and a resize mode of 'cover'.
     // This ensures that massive, high-resolution camera photos don't break the FlatList layout.
+    cardRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    cardImage: {
+        width: 60,
+        height: 90,
+        borderRadius: 6,
+        marginRight: 12,
+    },
+    cardImagePlaceholder: {
+        width: 60,
+        height: 90,
+        borderRadius: 6,
+        marginRight: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: theme.colors.background,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+    },
+    placeholderText: {
+        fontSize: 11,
+        color: theme.colors.secondaryText,
+        textAlign: 'center',
+    },
 
     // New Card Styles
     card: {
@@ -309,6 +353,7 @@ const createStyles = (theme) => StyleSheet.create({
         marginBottom: 10,
     },
     cardContent: {
+        flex: 1, //keep the text within the space beside the photo
         flexDirection: 'column',
     },
     cardTitle: {

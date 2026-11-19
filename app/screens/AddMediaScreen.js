@@ -2,11 +2,14 @@
 // Purpose: Valid destination target for adding media with manual entry form and dynamic subtypes.
 
 // SPRINT 2 TODO (Jaydine): Import the Expo image picker and file system libraries
-// NOTE: FileSystem.documentDirectory saves images locally on the device,
+import * as ImagePicker from 'expo-image-picker'; //open the photo library
+import { File, Paths } from 'expo-file-system'; //save photos on the phone
+
+//note: Paths.document saves images locally on the device
 // so photo_uri will only display on the /same phone/ where the item was added (can be changed in the future)
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, ScrollView, TouchableOpacity, Image } from 'react-native';
 
 // SPRINT 2 TODO (Ximena): Import checkDuplicateMedia from '../database/supabaseController'
 import { addMediaItem } from '../database/supabaseController';
@@ -52,6 +55,7 @@ export default function AddMediaScreen({ navigation }) {
     const [developer, setDeveloper] = useState('');
 
     // SPRINT 2 TODO (Jaydine): Declare a state variable to store the selected photo's URI.
+    const [photoUri, setPhotoUri] = useState(null); //store the selected photo's location
 
     // SPRINT 2 TODO (Jaydine): Create an asynchronous function to handle image selection:
     // 1. Request media library permissions from the user.
@@ -61,6 +65,36 @@ export default function AddMediaScreen({ navigation }) {
     //    b. Define a permanent path using the app's document directory + file name.
     //    c. Copy the file from the temporary URI to the new permanent path.
     //    d. Update your photo URI state variable with this permanent path.
+    const pickPhoto = async () => {
+        try {
+            const permission = await ImagePicker.requestMediaLibraryPermissionsAsync(); //request photo access
+
+            if (!permission.granted) {
+                Alert.alert('Permission Required', 'Please allow photo access in your phone settings.');
+                return; //stop if permission was denied
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'], //only show photos
+                allowsEditing: true, //allow cropping
+                quality: 0.8 //reduce the saved image size
+            });
+
+            if (result.canceled || !result.assets?.length) {
+                return; //keep the current photo if the user cancels
+            }
+
+            const source = new File(result.assets[0].uri); //get the selected photo
+            const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}-${source.name}`; //create a unique file name
+            const savedPhoto = new File(Paths.document, fileName); //choose a lasting location
+
+            await source.copy(savedPhoto); //save a copy on the phone
+            setPhotoUri(savedPhoto.uri); //update the selected photo
+        } catch (error) {
+            console.error('Photo selection failed:', error); //show the error in the terminal
+            Alert.alert('Photo Error', 'Could not attach the photo. Please try again.');
+        }
+    };
 
     const handleSave = async () => {
         if (!title.trim() || !mediaType || !genre || !releaseYear.trim()) {
@@ -112,7 +146,7 @@ export default function AddMediaScreen({ navigation }) {
             //      - Show success alert and navigate goBack().
 
             // SPRINT 2 TODO (Ximena): Remove the below code inside this try block once the above has been implemented.
-            const mediaId = await addMediaItem(title.trim(), mediaType, genre, yearInt, subtypeData, user.id);
+            const mediaId = await addMediaItem(title.trim(), mediaType, genre, yearInt, subtypeData, user.id, photoUri); 
             
             console.log(`\n=== NEW ITEM SAVED: ID ${mediaId} ===`);
             Alert.alert('Success', 'Media saved successfully!', [
@@ -131,6 +165,30 @@ export default function AddMediaScreen({ navigation }) {
             {/* SPRINT 2 TODO (Jaydine): Add a touchable UI element here to trigger the image picker function. */}
             {/* IF the photo URI state has a value: render the Image component using that URI. */}
             {/* ELSE: render a placeholder square or camera icon. */}
+
+            <TouchableOpacity
+                style={styles.photoPicker}
+                onPress={pickPhoto}
+                accessibilityRole="button"
+                accessibilityLabel="Choose media photo"
+            >
+                {photoUri ? (
+                    <Image
+                        source={{ uri: photoUri }}
+                        style={styles.photoPreview}
+                        resizeMode="cover"
+                    />
+                ) : (
+                    <View style={styles.photoPlaceholder}>
+                        <Text style={styles.photoText}>Attach a Photo</Text>
+                    </View>
+                )}
+
+                <Text style={styles.photoText}>
+                    {photoUri ? 'Tap to change photo' : 'Tap to choose a photo'}
+                </Text>
+            </TouchableOpacity>
+
 
             <Text style={styles.label}>Title</Text>
             <TextInput
@@ -288,6 +346,32 @@ export default function AddMediaScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+    photoPicker: {
+        alignItems: 'center',
+        marginBottom: lightTheme.spacing.lg,
+    },
+    photoPreview: {
+        width: 150,
+        height: 200,
+        borderRadius: lightTheme.radius.md,
+    },
+    photoPlaceholder: {
+        width: 150,
+        height: 200,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: lightTheme.colors.border,
+        borderRadius: lightTheme.radius.md,
+        backgroundColor: lightTheme.colors.surface,
+    },
+    photoText: {
+        color: lightTheme.colors.secondaryText,
+        fontSize: 13,
+        marginTop: 8,
+        textAlign: 'center',
+    },
     container: {
         flex: 1,
         backgroundColor: lightTheme.colors.background
