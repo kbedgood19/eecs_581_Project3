@@ -36,6 +36,9 @@ export default function CollectionScreen({ navigation, route }) {
     const [searchQuery, setSearchQuery] = useState(initialQuery);
     const [activeFilter, setActiveFilter] = useState('All');
 
+    const [sortBy, setSortBy] = useState('title_asc');
+    const [formatFilter, setFormatFilter] = useState('All');
+
     // SPRINT 2 TODO (Greeshma): Declare a state variable for 'sortBy' (default to 'title_asc').
     // SPRINT 2 TODO (Greeshma): Declare a state variable for 'formatFilter' (default to 'All').
     
@@ -69,7 +72,13 @@ export default function CollectionScreen({ navigation, route }) {
                     // Keep user.id as the first argument!
 
                     // SUPABASE INTEGRATION
-                    const data = await getMediaCatalog(user.id, searchQuery, activeFilter);
+                    const data = await getMediaCatalog(
+                        user.id,
+                        searchQuery,
+                        activeFilter,
+                        sortBy,
+                        formatFilter
+                    );
                     if (isActive) {
                         setMediaItems(data);
                     }
@@ -93,7 +102,7 @@ export default function CollectionScreen({ navigation, route }) {
         
         // SPRINT 2 TODO (Greeshma): Add your 'sortBy' and 'formatFilter' state variables into this array bracket.
         // This ensures the screen immediately re-fetches the list whenever a user changes a sort/filter option!
-        }, [searchQuery, activeFilter])
+        }, [searchQuery, activeFilter, sortBy, formatFilter])
     );
 
     // UI for a single media item card
@@ -219,6 +228,59 @@ export default function CollectionScreen({ navigation, route }) {
             {/* You can use horizontal ScrollViews with touchable chips (like the media type filters above), */}
             {/* or standard React Native <Picker> components, or a popup Modal. */}
             {/* Make sure their values are bound to your 'sortBy' and 'formatFilter' state variables! */}
+            {/* SORTING */}
+            <View style={styles.filterSection}>
+                <Text style={styles.sectionLabel}>Sort by:</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}
+                     contentContainerStyle={styles.filterScroll}>
+                     {[
+                         { label: 'Title (A–Z)', value: 'title_asc' },
+                         { label: 'Date Added', value: 'date_added' },
+                         { label: 'Highest Rated', value: 'rating_desc' }
+                     ].map(option => (
+                         <TouchableOpacity
+                             key={option.value}
+                             style={[
+                                 styles.filterChip,
+                                 sortBy === option.value && styles.activeFilterChip
+                             ]}
+                             onPress={() => setSortBy(option.value)}
+                         >
+                             <Text style={[
+                                 styles.filterText,
+                                 sortBy === option.value && styles.activeFilterText
+                             ]}>
+                                 {option.label}
+                             </Text>
+                         </TouchableOpacity>
+                     ))}
+                 </ScrollView>
+             </View>
+
+            {/* FORMAT FILTER */}
+            <View style={styles.filterSection}>
+                <Text style={styles.sectionLabel}>Format:</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.filterScroll}>
+                    {['All', 'Digital', 'Physical', 'Unspecified'].map(format => (
+                        <TouchableOpacity
+                            key={format}
+                            style={[
+                                styles.filterChip,
+                                formatFilter === format && styles.activeFilterChip
+                            ]}
+                            onPress={() => setFormatFilter(format)}
+                        >
+                            <Text style={[
+                                styles.filterText,
+                                formatFilter === format && styles.activeFilterText
+                            ]}>
+                                {format}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
 
             {/* MEDIA LIST */}
             {isLoading ? (
@@ -266,6 +328,14 @@ const createStyles = (theme) => StyleSheet.create({
     filterSection: {
         marginBottom: theme.spacing?.md || 12,
     },
+    sectionLabel: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: theme.colors.text,
+        marginHorizontal: 16,
+        marginBottom: 8,
+     },
+    
     filterScroll: {
         paddingHorizontal: theme.spacing?.lg || 16,
         gap: 10,
