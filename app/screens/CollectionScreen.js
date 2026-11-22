@@ -14,10 +14,8 @@ import {
     StatusBar,
     FlatList,
     ActivityIndicator,
-    // SPRINT 2 TODO (Jaydine): Import the Image component from 'react-native' here.
     Image
 } from 'react-native';
-
 
 import { Search } from 'lucide-react-native';
 import { getTheme } from '../styles/theme';
@@ -35,13 +33,9 @@ export default function CollectionScreen({ navigation, route }) {
 
     const [searchQuery, setSearchQuery] = useState(initialQuery);
     const [activeFilter, setActiveFilter] = useState('All');
-
     const [sortBy, setSortBy] = useState('title_asc');
     const [formatFilter, setFormatFilter] = useState('All');
 
-    // SPRINT 2 TODO (Greeshma): Declare a state variable for 'sortBy' (default to 'title_asc').
-    // SPRINT 2 TODO (Greeshma): Declare a state variable for 'formatFilter' (default to 'All').
-    
     // New state for database data
     const [mediaItems, setMediaItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -66,10 +60,6 @@ export default function CollectionScreen({ navigation, route }) {
                         }
                         return;
                     }
-                    
-                    // SPRINT 2 TODO (Greeshma): Update this controller call to pass your new filter variables.
-                    // Expected argument order: (userId, searchQuery, filterType, sortBy, formatFilter)
-                    // Keep user.id as the first argument!
 
                     // SUPABASE INTEGRATION
                     const data = await getMediaCatalog(
@@ -90,7 +80,7 @@ export default function CollectionScreen({ navigation, route }) {
                     }
                 }
             }
-            
+
             const delaySearch = setTimeout(() => {
                 loadMedia();
             }, 300);
@@ -99,9 +89,6 @@ export default function CollectionScreen({ navigation, route }) {
                 clearTimeout(delaySearch);
                 isActive = false; // prevents state updates if screen is unmounted
             };
-        
-        // SPRINT 2 TODO (Greeshma): Add your 'sortBy' and 'formatFilter' state variables into this array bracket.
-        // This ensures the screen immediately re-fetches the list whenever a user changes a sort/filter option!
         }, [searchQuery, activeFilter, sortBy, formatFilter])
     );
 
@@ -111,10 +98,6 @@ export default function CollectionScreen({ navigation, route }) {
             style={styles.card}
             onPress={() => navigation.navigate('EditMedia', { mediaId: item.id })}
         >
-            {/* SPRINT 2 TODO (Jaydine): Wrap the image and the existing text content (cardContent) below inside a row-based container so they sit side-by-side. */}
-            {/* IF item.photo_uri exists: Render the Image component pointing to that URI. */}
-            {/* ELSE: Render a default placeholder view/icon. */}
-
             <View style={styles.cardRow}>
                 {item.photo_uri ? (
                     <Image
@@ -149,12 +132,7 @@ export default function CollectionScreen({ navigation, route }) {
                             </>
                         )}
 
-                        {/* SPRINT 2 TODO (Sabelli): Conditionally render the user's rating here. */}
-                        {/* IF item.rating is not null: */}
-                        {/*    1. Render a dot separator <Text style={styles.dotSeparator}>•</Text> */}
-                        {/*    2. Render a Text component displaying a star icon and the score (e.g., "★ 4/5"). */}
-                        {/* ELSE: render nothing. */}
-                                {item.rating != null && (
+                        {item.rating != null && (
                             <>
                                 <Text style={styles.dotSeparator}>•</Text>
                                 <Text style={styles.cardRating}>★ {item.rating}/5</Text>
@@ -224,44 +202,46 @@ export default function CollectionScreen({ navigation, route }) {
                 </ScrollView>
             </View>
 
-            {/* SPRINT 2 TODO (Greeshma): Build the UI controls for Sorting and Format Filtering here. */}
-            {/* You can use horizontal ScrollViews with touchable chips (like the media type filters above), */}
-            {/* or standard React Native <Picker> components, or a popup Modal. */}
-            {/* Make sure their values are bound to your 'sortBy' and 'formatFilter' state variables! */}
             {/* SORTING */}
             <View style={styles.filterSection}>
                 <Text style={styles.sectionLabel}>Sort by:</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}
-                     contentContainerStyle={styles.filterScroll}>
-                     {[
-                         { label: 'Title (A–Z)', value: 'title_asc' },
-                         { label: 'Date Added', value: 'date_added' },
-                         { label: 'Highest Rated', value: 'rating_desc' }
-                     ].map(option => (
-                         <TouchableOpacity
-                             key={option.value}
-                             style={[
-                                 styles.filterChip,
-                                 sortBy === option.value && styles.activeFilterChip
-                             ]}
-                             onPress={() => setSortBy(option.value)}
-                         >
-                             <Text style={[
-                                 styles.filterText,
-                                 sortBy === option.value && styles.activeFilterText
-                             ]}>
-                                 {option.label}
-                             </Text>
-                         </TouchableOpacity>
-                     ))}
-                 </ScrollView>
-             </View>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.filterScroll}
+                >
+                    {[
+                        { label: 'Title (A–Z)', value: 'title_asc' },
+                        { label: 'Date Added', value: 'date_added' },
+                        { label: 'Highest Rated', value: 'rating_desc' }
+                    ].map(option => (
+                        <TouchableOpacity
+                            key={option.value}
+                            style={[
+                                styles.filterChip,
+                                sortBy === option.value && styles.activeFilterChip
+                            ]}
+                            onPress={() => setSortBy(option.value)}
+                        >
+                            <Text style={[
+                                styles.filterText,
+                                sortBy === option.value && styles.activeFilterText
+                            ]}>
+                                {option.label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
 
             {/* FORMAT FILTER */}
             <View style={styles.filterSection}>
                 <Text style={styles.sectionLabel}>Format:</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.filterScroll}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.filterScroll}
+                >
                     {['All', 'Digital', 'Physical', 'Unspecified'].map(format => (
                         <TouchableOpacity
                             key={format}
@@ -310,7 +290,7 @@ const createStyles = (theme) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: theme.colors.surface,
-        borderRadius: theme.radius?.md || 8, // fallback if theme prop doesn't exist
+        borderRadius: theme.radius?.md || 8,
         borderWidth: 1,
         borderColor: theme.colors.border,
         paddingHorizontal: 12,
@@ -334,8 +314,7 @@ const createStyles = (theme) => StyleSheet.create({
         color: theme.colors.text,
         marginHorizontal: 16,
         marginBottom: 8,
-     },
-    
+    },
     filterScroll: {
         paddingHorizontal: theme.spacing?.lg || 16,
         gap: 10,
@@ -363,7 +342,7 @@ const createStyles = (theme) => StyleSheet.create({
     listContainer: {
         flexGrow: 1,
         padding: theme.spacing?.lg || 16,
-        gap: 12, // Spaces out the cards
+        gap: 12,
     },
     emptyState: {
         flex: 1,
@@ -388,10 +367,6 @@ const createStyles = (theme) => StyleSheet.create({
         textAlign: 'center',
         lineHeight: 20,
     },
-
-    // SPRINT 2 TODO (Jaydine): Define strict styling for the card image here. 
-    // It requires fixed dimensions (e.g., width: 60, height: 90) and a resize mode of 'cover'.
-    // This ensures that massive, high-resolution camera photos don't break the FlatList layout.
     cardRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -418,8 +393,6 @@ const createStyles = (theme) => StyleSheet.create({
         color: theme.colors.secondaryText,
         textAlign: 'center',
     },
-
-    // New Card Styles
     card: {
         backgroundColor: theme.colors.surface,
         borderRadius: theme.radius?.md || 8,
@@ -429,7 +402,7 @@ const createStyles = (theme) => StyleSheet.create({
         marginBottom: 10,
     },
     cardContent: {
-        flex: 1, //keep the text within the space beside the photo
+        flex: 1,
         flexDirection: 'column',
     },
     cardTitle: {
@@ -459,7 +432,7 @@ const createStyles = (theme) => StyleSheet.create({
     },
     cardRating: {
         fontSize: 12,
-        fontWeight: '600', //same weight as the media type
-        color: '#D99A00', //gold so the rating stands out
-    }
+        fontWeight: '600',
+        color: '#D99A00',
+    },
 });
