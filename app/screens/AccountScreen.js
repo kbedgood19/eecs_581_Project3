@@ -5,38 +5,90 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 
-// SPRINT 2 TODO (Lauren): Import getTheme and your new themes from theme.js once you build them!
-import { getTheme } from '../styles/theme'; 
+import {
+    getTheme,
+    lightTheme,
+    darkTheme,
+    gardenTheme,
+    tropicalTheme,
+    industrialTheme,
+} from '../styles/theme';
 import CustomButton from '../components/CustomButton';
-// import { supabase } from '../database/supabase'; // Uncomment when the team fully links Supabase auth
+// import { supabase } from '../database/supabase'; // Uncomment when linking AccountScreen to Supabase auth
+
+const THEME_OPTIONS = [
+    {
+        id: 'light',
+        name: 'Light',
+        description: 'Clean and bright default palette',
+        colors: [
+            lightTheme.colors.background,
+            lightTheme.colors.primary,
+            lightTheme.colors.text,
+        ],
+    },
+    {
+        id: 'dark',
+        name: 'Dark',
+        description: 'Low-light charcoal and periwinkle',
+        colors: [
+            darkTheme.colors.background,
+            darkTheme.colors.primary,
+            darkTheme.colors.text,
+        ],
+    },
+    {
+        id: 'garden',
+        name: 'Garden',
+        description: 'Soft greens and earthy tones',
+        colors: [
+            gardenTheme.colors.background,
+            gardenTheme.colors.primary,
+            gardenTheme.colors.text,
+        ],
+    },
+    {
+        id: 'tropical',
+        name: 'Tropical',
+        description: 'Ocean blues and warm coral accents',
+        colors: [
+            tropicalTheme.colors.background,
+            tropicalTheme.colors.primary,
+            tropicalTheme.colors.danger,
+        ],
+    },
+    {
+        id: 'industrial',
+        name: 'Industrial',
+        description: 'Dark slate and cool steel blues',
+        colors: [
+            industrialTheme.colors.background,
+            industrialTheme.colors.primary,
+            industrialTheme.colors.text,
+        ],
+    },
+];
 
 export default function AccountScreen({ navigation }) {
     // State for the currently selected theme name
     const [currentThemeName, setCurrentThemeName] = useState('light');
 
-    // SPRINT 2 TODO (Lauren):
-    const theme = getTheme(currentThemeName); 
+    const theme = getTheme(currentThemeName);
     const styles = createStyles(theme);
 
-    // Mock user data (until Supabase auth is fully hooked up)
+    // Mock user data (until Supabase auth is hooked up on this screen)
     const userEmail = "testuser@example.com";
 
     const handleSignOut = async () => {
-        // SPRINT 2 TODO (Team): Add Supabase sign out logic here later
-        // await supabase.auth.signOut();
-        
+        // TODO (Team): Replace with `const { error } = await supabase.auth.signOut();`
         Alert.alert("Sign Out", "You have been signed out.");
-        
-        // SPRINT 2 TODO (Team): Navigate back to the Login screen once the auth flow is built
-        // navigation.replace('Login'); 
     };
 
     const changeTheme = (themeName) => {
         setCurrentThemeName(themeName);
-        
-        // Note for Lauren: To make this theme change persist across the WHOLE app,
-        // we will eventually need to move this state to a React Context or use AsyncStorage.
-        // For Sprint 2, just focus on building the UI and getting local state toggling to work on this screen!
+
+        // Note: To persist theme changes across the whole app,
+        // move this state to a React Context or AsyncStorage in Sprint 3.
     };
 
     return (
@@ -46,15 +98,19 @@ export default function AccountScreen({ navigation }) {
             {/* Profile Section */}
             <View style={styles.section}>
                 <View style={styles.profilePictureContainer}>
-                    {/* SPRINT 2 TODO (Lauren): Add any other profile UI or avatar placeholders you want here */}
                     <View style={styles.profilePicture}>
                         <Text style={styles.profilePictureIcon}>👤</Text>
                     </View>
 
-                    {/* SPRINT 2 add-on (Lauren): Add a button to change the profile picture.
-                    // Change profile functionality is not implemented yet, so just show an alert for now.
-                    // needs implementation*/}
-                    <TouchableOpacity onPress={() => Alert.alert("Profile Picture", "Change profile picture functionality coming soon!")}>
+                    {/* Placeholder button for future profile photo upload */}
+                    <TouchableOpacity
+                        onPress={() =>
+                            Alert.alert(
+                                "Profile Picture",
+                                "Change profile picture functionality coming soon!"
+                            )
+                        }
+                    >
                         <Text style={styles.changePhotoText}>Add Profile Picture</Text>
                     </TouchableOpacity>
                 </View>
@@ -62,21 +118,14 @@ export default function AccountScreen({ navigation }) {
                 {/* Profile Details */}
                 <Text style={styles.sectionTitle}>Profile Details</Text>
                 <Text style={styles.label}>Email: {userEmail}</Text>
-
             </View>
-            
 
             {/* Theme Selection Section */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>App Theme</Text>
                 <Text style={styles.subText}>Choose your aesthetic:</Text>
 
-                {/* SPRINT 2 TODO (Lauren): */}
-                {/* You could map over an array of theme names ['light', 'dark', 'garden', 'tropical', 'industrial'] */}
-                {/* and render a TouchableOpacity button for each one. */}
-                {/* Make sure to call changeTheme('themeName') in their onPress events! */} 
                 {THEME_OPTIONS.map((option) => {
-
                     const isSelected = currentThemeName === option.id;
 
                     return (
@@ -84,12 +133,11 @@ export default function AccountScreen({ navigation }) {
                             key={option.id}
                             style={[
                                 styles.themeOption,
-                                isSelected && styles.selectedTheme
+                                isSelected && styles.selectedTheme,
                             ]}
                             onPress={() => changeTheme(option.id)}
                             activeOpacity={0.8}
                         >
-
                             {/* Theme name and description */}
                             <View style={styles.themeInfo}>
                                 <Text style={styles.themeName}>
@@ -108,7 +156,7 @@ export default function AccountScreen({ navigation }) {
                                         key={index}
                                         style={[
                                             styles.colorCircle,
-                                            { backgroundColor: color }
+                                            { backgroundColor: color },
                                         ]}
                                     />
                                 ))}
@@ -118,7 +166,6 @@ export default function AccountScreen({ navigation }) {
                             <Text style={styles.checkmark}>
                                 {isSelected ? '✓' : ''}
                             </Text>
-
                         </TouchableOpacity>
                     );
                 })}
@@ -170,7 +217,7 @@ const createStyles = (theme) => StyleSheet.create({
         color: theme.colors.secondaryText,
         marginBottom: 16,
     },
-    // SPRINT 2 TODO (Lauren):Individual theme selection button
+    // Individual theme selection button
     themeOption: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -181,37 +228,31 @@ const createStyles = (theme) => StyleSheet.create({
         borderWidth: 1,
         borderColor: theme.colors.border,
     },
-
-    // SPRINT 2 TODO (Lauren): Highlight the currently selected theme
+    // Highlight the currently selected theme
     selectedTheme: {
         borderColor: theme.colors.primary,
         borderWidth: 2,
         backgroundColor: theme.colors.primaryLight,
     },
-
     themeInfo: {
         flex: 1,
     },
-
     themeName: {
         fontSize: 16,
         fontWeight: '600',
         color: theme.colors.text,
         marginBottom: 4,
     },
-
     themeDescription: {
         fontSize: 12,
         color: theme.colors.secondaryText,
     },
-
     // Small circles showing each theme's colors
     colorPreview: {
         flexDirection: 'row',
         alignItems: 'center',
         marginRight: 10,
     },
-
     colorCircle: {
         width: 17,
         height: 17,
@@ -220,7 +261,6 @@ const createStyles = (theme) => StyleSheet.create({
         borderWidth: 1,
         borderColor: theme.colors.border,
     },
-
     checkmark: {
         width: 18,
         fontSize: 18,
@@ -228,13 +268,11 @@ const createStyles = (theme) => StyleSheet.create({
         color: theme.colors.primary,
         textAlign: 'center',
     },
-    
-    // (Lauren): Profile picture styles and container
+    // Profile picture styles and container
     profilePictureContainer: {
         alignItems: 'center',
         marginBottom: 20,
     },
-
     profilePicture: {
         width: 100,
         height: 100,
@@ -246,14 +284,16 @@ const createStyles = (theme) => StyleSheet.create({
         borderColor: theme.colors.primary,
         marginBottom: 10,
     },
-
     profilePictureIcon: {
         fontSize: 42,
     },
-
+    changePhotoText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: theme.colors.primary,
+    },
     logoutContainer: {
         marginTop: 20,
         marginBottom: 40,
-    }
-    
+    },
 });

@@ -1,47 +1,395 @@
 // File: app/screens/CollectionScreen.js
-// Purpose: Valid destination target for viewing the media collection and navigating back home[cite: 1].
-// Author: Marie Biernacki
+// Purpose: Main catalog view with search, filtering, and media display.
 
-// External Sources: Gemini (Code Template)
+import React, { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+
+import {
+    View,
+    Text,
+    TextInput,
+    StyleSheet,
+    TouchableOpacity,
+    ScrollView,
+    StatusBar,
+    FlatList,
+    ActivityIndicator,
+    // SPRINT 2 TODO (Jaydine): Import the Image component from 'react-native' here.
+    Image
+} from 'react-native';
 
 
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
-// TODO (Marie): Once Lauren and Sabelli finish, import { colors, layout, typography } from '../styles/theme';
-// TODO (Marie): Once finished, import CustomButton from '../components/CustomButton';
+import { Search } from 'lucide-react-native';
+import { getTheme } from '../styles/theme';
 
-export default function CollectionScreen({ navigation }) {
+// Marie: SUPABASE INTEGRATION
+import { getMediaCatalog } from '../database/supabaseController';
+import { supabase } from '../database/supabase';
+
+export default function CollectionScreen({ navigation, route }) {
+    const isDarkMode = false;
+    const theme = getTheme(isDarkMode);
+    const styles = createStyles(theme);
+
+    const initialQuery = route.params?.initialQuery || '';
+
+    const [searchQuery, setSearchQuery] = useState(initialQuery);
+    const [activeFilter, setActiveFilter] = useState('All');
+
+    // SPRINT 2 TODO (Greeshma): Declare a state variable for 'sortBy' (default to 'title_asc').
+    // SPRINT 2 TODO (Greeshma): Declare a state variable for 'formatFilter' (default to 'All').
+    
+    // New state for database data
+    const [mediaItems, setMediaItems] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const filters = ['All', 'Movies', 'Music', 'Books', 'Video Games'];
+
+    // Re-fetch data whenever the screen comes into focus OR filters change
+    useFocusEffect(
+        useCallback(() => {
+            let isActive = true;
+
+            async function loadMedia() {
+                setIsLoading(true);
+                try {
+                    // Marie: SUPABASE INTEGRATION
+                    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+                    if (userError || !user) {
+                        console.error("No logged-in user found:", userError?.message);
+                        if (isActive) {
+                            setMediaItems([]);
+                        }
+                        return;
+                    }
+                    
+                    // SPRINT 2 TODO (Greeshma): Update this controller call to pass your new filter variables.
+                    // Expected argument order: (userId, searchQuery, filterType, sortBy, formatFilter)
+                    // Keep user.id as the first argument!
+
+                    // SUPABASE INTEGRATION
+                    const data = await getMediaCatalog(user.id, searchQuery, activeFilter);
+                    if (isActive) {
+                        setMediaItems(data);
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch media:", error);
+                } finally {
+                    if (isActive) {
+                        setIsLoading(false);
+                    }
+                }
+            }
+            
+            const delaySearch = setTimeout(() => {
+                loadMedia();
+            }, 300);
+
+            return () => {
+                clearTimeout(delaySearch);
+                isActive = false; // prevents state updates if screen is unmounted
+            };
+        
+        // SPRINT 2 TODO (Greeshma): Add your 'sortBy' and 'formatFilter' state variables into this array bracket.
+        // This ensures the screen immediately re-fetches the list whenever a user changes a sort/filter option!
+        }, [searchQuery, activeFilter])
+    );
+
+    // UI for a single media item card
+    const renderMediaCard = ({ item }) => (
+        <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('EditMedia', { mediaId: item.id })}
+        >
+            {/* SPRINT 2 TODO (Jaydine): Wrap the image and the existing text content (cardContent) below inside a row-based container so they sit side-by-side. */}
+            {/* IF item.photo_uri exists: Render the Image component pointing to that URI. */}
+            {/* ELSE: Render a default placeholder view/icon. */}
+
+            <View style={styles.cardRow}>
+                {item.photo_uri ? (
+                    <Image
+                        source={{ uri: item.photo_uri }}
+                        style={styles.cardImage}
+                        resizeMode="cover"
+                        accessibilityLabel={`Photo of ${item.title}`}
+                    />
+                ) : (
+                    <View style={styles.cardImagePlaceholder}>
+                        <Text style={styles.placeholderText}>No Photo</Text>
+                    </View>
+                )}
+
+                <View style={styles.cardContent}>
+                    <Text style={styles.cardTitle}>{item.title}</Text>
+
+                    <View style={styles.cardMeta}>
+                        <Text style={styles.cardTypeText}>{item.type_name}</Text>
+
+                        {item.genre && (
+                            <>
+                                <Text style={styles.dotSeparator}>•</Text>
+                                <Text style={styles.cardSubtext}>{item.genre}</Text>
+                            </>
+                        )}
+
+                        {item.releaseYear && (
+                            <>
+                                <Text style={styles.dotSeparator}>•</Text>
+                                <Text style={styles.cardSubtext}>{item.releaseYear}</Text>
+                            </>
+                        )}
+
+                        {/* SPRINT 2 TODO (Sabelli): Conditionally render the user's rating here. */}
+                        {/* IF item.rating is not null: */}
+                        {/*    1. Render a dot separator <Text style={styles.dotSeparator}>•</Text> */}
+                        {/*    2. Render a Text component displaying a star icon and the score (e.g., "★ 4/5"). */}
+                        {/* ELSE: render nothing. */}
+                                {item.rating != null && (
+                            <>
+                                <Text style={styles.dotSeparator}>•</Text>
+                                <Text style={styles.cardRating}>★ {item.rating}/5</Text>
+                            </>
+                        )}
+                    </View>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+
+    // Empty state UI extracted for the FlatList
+    const ListEmptyComponent = () => (
+        <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No items found.</Text>
+            <Text style={styles.emptySubtext}>
+                Try adjusting your filters or adding new media to your catalog.
+            </Text>
+        </View>
+    );
+
     return (
         <View style={styles.container}>
-            {/* FIXME: Apply typography.title style to this Text later */}
-            <Text style={styles.header}>Media Collection</Text>
-            
-            {/* Build the global search bar. */}
-            <TextInput 
-                style={styles.input} 
-                placeholder="Search catalog by title..." 
+            <StatusBar
+                barStyle={isDarkMode ? "light-content" : "dark-content"}
+                backgroundColor={theme.colors.background}
             />
-            
-            {/* FIXME: Swap this default Button for CustomButton later */}
-            <Button title="Return to Home" onPress={() => navigation.goBack()} />
+
+            {/* SEARCH BAR */}
+            <View style={styles.searchContainer}>
+                <Search size={21} color={theme.colors.secondaryText} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search catalog by title..."
+                    placeholderTextColor={theme.colors.secondaryText}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    returnKeyType="search"
+                />
+            </View>
+
+            {/* FILTERS */}
+            <View style={styles.filterSection}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.filterScroll}
+                >
+                    {filters.map((filter) => (
+                        <TouchableOpacity
+                            key={filter}
+                            style={[
+                                styles.filterChip,
+                                activeFilter === filter && styles.activeFilterChip
+                            ]}
+                            onPress={() => setActiveFilter(filter)}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={[
+                                styles.filterText,
+                                activeFilter === filter && styles.activeFilterText
+                            ]}>
+                                {filter}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
+
+            {/* SPRINT 2 TODO (Greeshma): Build the UI controls for Sorting and Format Filtering here. */}
+            {/* You can use horizontal ScrollViews with touchable chips (like the media type filters above), */}
+            {/* or standard React Native <Picker> components, or a popup Modal. */}
+            {/* Make sure their values are bound to your 'sortBy' and 'formatFilter' state variables! */}
+
+            {/* MEDIA LIST */}
+            {isLoading ? (
+                <View style={{ flex: 1, justifyContent: 'center' }}>
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                </View>
+            ) : (
+                <FlatList
+                    data={mediaItems}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={renderMediaCard}
+                    ListEmptyComponent={ListEmptyComponent}
+                    contentContainerStyle={styles.listContainer}
+                />
+            )}
         </View>
     );
 }
 
-// ============================================================================
-// TODO: THEME INTEGRATION GUIDE
-// When Lauren and Sabelli finish the global theme, integrate it here using:
-// 
-// 1. Direct Assignment (for single properties like colors):
-//    backgroundColor: colors.light.primary,
-//
-// 2. Spread Syntax (for grouped objects like layout or typography):
-//    ...typography.buttonText,
-//    ...layout.container,
-// ============================================================================
+/* ================= STYLES ================= */
+const createStyles = (theme) => StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.radius?.md || 8, // fallback if theme prop doesn't exist
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        paddingHorizontal: 12,
+        marginHorizontal: theme.spacing?.lg || 16,
+        marginTop: theme.spacing?.lg || 16,
+        marginBottom: theme.spacing?.md || 12,
+    },
+    searchInput: {
+        flex: 1,
+        color: theme.colors.text,
+        fontSize: 14,
+        paddingVertical: 14,
+        paddingLeft: 8,
+    },
+    filterSection: {
+        marginBottom: theme.spacing?.md || 12,
+    },
+    filterScroll: {
+        paddingHorizontal: theme.spacing?.lg || 16,
+        gap: 10,
+    },
+    filterChip: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: theme.radius?.full || 50,
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+    },
+    activeFilterChip: {
+        backgroundColor: theme.colors.primary,
+        borderColor: theme.colors.primary,
+    },
+    filterText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: theme.colors.secondaryText,
+    },
+    activeFilterText: {
+        color: '#FFFFFF',
+    },
+    listContainer: {
+        flexGrow: 1,
+        padding: theme.spacing?.lg || 16,
+        gap: 12, // Spaces out the cards
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.radius?.lg || 12,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        padding: 40,
+        marginTop: 20,
+    },
+    emptyText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: theme.colors.text,
+        marginBottom: 8,
+    },
+    emptySubtext: {
+        fontSize: 13,
+        color: theme.colors.secondaryText,
+        textAlign: 'center',
+        lineHeight: 20,
+    },
 
-const styles = StyleSheet.create({
-    // FIXME: Replace this block with ...layout.container later
-    container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-    header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-    input: { width: '100%', padding: 10, borderWidth: 1, borderRadius: 5, marginBottom: 20 }
+    // SPRINT 2 TODO (Jaydine): Define strict styling for the card image here. 
+    // It requires fixed dimensions (e.g., width: 60, height: 90) and a resize mode of 'cover'.
+    // This ensures that massive, high-resolution camera photos don't break the FlatList layout.
+    cardRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    cardImage: {
+        width: 60,
+        height: 90,
+        borderRadius: 6,
+        marginRight: 12,
+    },
+    cardImagePlaceholder: {
+        width: 60,
+        height: 90,
+        borderRadius: 6,
+        marginRight: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: theme.colors.background,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+    },
+    placeholderText: {
+        fontSize: 11,
+        color: theme.colors.secondaryText,
+        textAlign: 'center',
+    },
+
+    // New Card Styles
+    card: {
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.radius?.md || 8,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        padding: 16,
+        marginBottom: 10,
+    },
+    cardContent: {
+        flex: 1, //keep the text within the space beside the photo
+        flexDirection: 'column',
+    },
+    cardTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: theme.colors.text,
+        marginBottom: 4,
+    },
+    cardMeta: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+    },
+    cardTypeText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: theme.colors.primary,
+    },
+    cardSubtext: {
+        fontSize: 12,
+        color: theme.colors.secondaryText,
+    },
+    dotSeparator: {
+        fontSize: 12,
+        color: theme.colors.secondaryText,
+        marginHorizontal: 6,
+    },
+    cardRating: {
+        fontSize: 12,
+        fontWeight: '600', //same weight as the media type
+        color: '#D99A00', //gold so the rating stands out
+    }
 });
