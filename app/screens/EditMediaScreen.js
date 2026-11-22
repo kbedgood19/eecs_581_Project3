@@ -11,7 +11,7 @@ import CustomButton from '../components/CustomButton';
 
 // Marie: SUPABASE INTEGRATION
 // SPRINT 2 TODO (Ximena): Also import checkDuplicateMedia from '../database/supabaseController'
-import { getMediaItemById, updateMediaItem, deleteMediaItem, getMediaCatalog } from '../database/supabaseController';
+import { getMediaItemById, updateMediaItem, deleteMediaItem, getMediaCatalog, checkDuplicateMedia } from '../database/supabaseController';
 import { supabase } from '../database/supabase';
 
 // GENRE_MAP based on if the item is a movie, book, music, or a video game
@@ -183,13 +183,63 @@ export default function EditMediaScreen({ route, navigation }) {
             //      - Show success alert and navigate goBack().
 
             // SPRINT 2 TODO (Ximena): Remove the below code inside this try block once the above has been implemented.
-            await updateMediaItem(mediaId, title.trim(), genre, yearInt, mediaType, subtypeData, photoUri); 
-            Alert.alert("Success", "Media item updated successfully.", [
-                { text: "OK", onPress: () => navigation.goBack() }
-            ]);
+            
+            // Checks whether another item with this title already exists
+            const duplicate = await checkDuplicateMedia(
+                user.id,
+                title.trim(),
+                mediaType
+            );
+
+            // Function to update the item
+            const saveChanges = async () => {
+                try {
+                    await updateMediaItem(
+                        mediaId,
+                        title.trim(),
+                        genre,
+                        yearInt,
+                        mediaType,
+                        subtypeData,
+                        photoUri,
+                        null,       // Temporary
+                        ''          // Temporary
+                    );
+                    Alert.alert("Success", "Media item updated successfully.", [
+                        {
+                            text: "OK",
+                            onPress: () => navigation.goBack()
+                        }
+                    ]);
+                } catch (error) {
+                    console.error("Failed to update item:", error);
+                    Alert.alert("Error", "Could not save changes to the database.");
+                }
+            };
+
+            // If another item has the same title, ask before updating
+            if (duplicate && duplicate.id !== mediaId) {
+                Alert.alert(
+                    "Duplicate Found",
+                    "Another item with this title already exists.",
+                    [
+                        {
+                            text: "Cancel",
+                            style: "cancel"
+                        },
+                        {
+                            text: "Update Anyway",
+                            onPress: saveChanges
+                        }
+                    ]
+                );
+            } else {
+                // No duplicate found, or the match is this exact item.
+                await saveChanges();
+            }
         } catch (error) {
-            console.error("Failed to update item:", error);
-            Alert.alert("Error", "Could not save changes to the database.");
+            console.error("Error checking for duplicates:", error);
+            Alert.alert("Error", "Could not check for duplicate media.");
         }
     };
 

@@ -12,7 +12,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Alert, ScrollView, TouchableOpacity, Image } from 'react-native';
 
 // SPRINT 2 TODO (Ximena): Import checkDuplicateMedia from '../database/supabaseController'
-import { addMediaItem } from '../database/supabaseController';
+import { addMediaItem, checkDuplicateMedia } from '../database/supabaseController';
 import { supabase } from '../database/supabase';
 
 import { lightTheme } from '../styles/theme'; // Assuming lightTheme is exported globally like in EditScreen
@@ -146,15 +146,67 @@ export default function AddMediaScreen({ navigation }) {
             //      - Show success alert and navigate goBack().
 
             // SPRINT 2 TODO (Ximena): Remove the below code inside this try block once the above has been implemented.
-            const mediaId = await addMediaItem(title.trim(), mediaType, genre, yearInt, subtypeData, user.id, photoUri); 
-            
-            console.log(`\n=== NEW ITEM SAVED: ID ${mediaId} ===`);
-            Alert.alert('Success', 'Media saved successfully!', [
-                { text: "OK", onPress: () => navigation.goBack() }
-            ]);
+
+            // Checks wheher this item already exists in the user's collection
+            const duplicate = await checkDuplicateMedia(
+                user.id,
+                title.trim(),
+                mediaType
+            );
+
+            // Helper function to save the item with the specified copy number
+            const saveItem = async (copyNumber) => {
+                try {
+                    const mediaId = await addMediaItem(
+                        title.trim(),
+                        mediaType,
+                        genre,
+                        yearInt,
+                        subtypeData,
+                        user.id,
+                        photoUri,
+                        null,       // Temporary
+                        '',         // Temporary
+                        copyNumber
+                    );
+                    console.log(`\n=== NEW ITEM SAVED: ID ${mediaId} ===`);
+
+                    Alert.alert('Success', 'Media saved successfully!', [
+                        {
+                            text: 'OK',
+                            onPress: () => navigation.goBack()
+                        }
+                    ]);
+                } catch (error) {
+                    console.error('Error saving media:', error);
+                    Alert.alert('Error', 'Could not save media to the database.');
+                }
+            };
+
+            // If a matching item exists, ask the user before adding another copy
+            if (duplicate) {
+                const newCopyNumber = Number(duplicate.copy_number || 1) + 1;
+                Alert.alert(
+                    'Duplicate Found',
+                    'This item already exists in your collection. Would you like to add another copy?',
+                    [
+                        {
+                            text: 'Cancel',
+                            style: 'cancel'
+                        },
+                        {
+                            text: 'Add Anyway',
+                            onPress: () => saveItem(newCopyNumber)
+                        }
+                    ]
+                );
+            } else {
+                // No duplicate exists, so add it as the first copy
+                await saveItem(1);
+            }
         } catch (error) {
-            console.error('Error saving media:', error);
-            Alert.alert('Error', 'Could not save media to the database.');
+            console.error('Error checking for duplicates:', error);
+            Alert.alert('Error', 'Could not check for duplicate media.');
         }
     };
 
