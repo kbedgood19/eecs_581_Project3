@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Alert, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { lightTheme } from '../styles/theme';
 import CustomButton from '../components/CustomButton';
+import { Star } from 'lucide-react-native'; //star icons for the rating
 
 // Marie: SUPABASE INTEGRATION
 // SPRINT 2 TODO (Ximena): Also import checkDuplicateMedia from '../database/supabaseController'
@@ -30,6 +31,7 @@ const FORMAT_MAP = {
     Music: ['Vinyl', 'CD', 'Cassette'],
     VideoGame: ['Disc', 'Cartridge']
 };
+const STAR_COLOR = '#F5B400'; //gold color for the stars
 
 export default function EditMediaScreen({ route, navigation }) {
     const { mediaId } = route.params;
@@ -42,7 +44,9 @@ export default function EditMediaScreen({ route, navigation }) {
     const [mediaType, setMediaType] = useState('');
 
     // SPRINT 2 TODO (Sabelli): Declare a state variable for 'rating' (default to null)
+    const [rating, setRating] = useState(null); //1 to 5 stars, null means no rating yet
     // SPRINT 2 TODO (Sabelli): Declare a state variable for 'review' (default to empty string)
+    const [review, setReview] = useState(''); //written review
     
     // Subtype fields
     const [director, setDirector] = useState('');
@@ -84,7 +88,9 @@ export default function EditMediaScreen({ route, navigation }) {
                     setPhotoUri(item.photo_uri || null); //load the item's existing photo
 
                     // SPRINT 2 TODO (Sabelli): Check if item.rating exists. If so, update your rating state.
+                    if (item.rating != null) setRating(Number(item.rating)); //load the saved rating
                     // SPRINT 2 TODO (Sabelli): Check if item.review exists. If so, update your review state.
+                    if (item.review != null) setReview(item.review); //load the saved review
 
                 }
             } catch (error) {
@@ -202,8 +208,8 @@ export default function EditMediaScreen({ route, navigation }) {
                         mediaType,
                         subtypeData,
                         photoUri,
-                        null,       // Temporary
-                        ''          // Temporary
+                        rating, //star rating or null
+                        review.trim() //written review
                     );
                     Alert.alert("Success", "Media item updated successfully.", [
                         {
@@ -451,6 +457,36 @@ export default function EditMediaScreen({ route, navigation }) {
             {/* SPRINT 2 TODO (Sabelli): Insert your Star Rating UI and multiline TextInput here. */}
             {/* Ensure they display the currently saved rating and review state variables so the user sees their existing feedback! */}
 
+            <Text style={styles.label}>Rating</Text>
+            <View style={styles.starRow}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                    <TouchableOpacity
+                        key={star}
+                        onPress={() => setRating(rating === star ? null : star)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Rate ${star} out of 5`}
+                    >
+                        <Star
+                            size={32}
+                            color={STAR_COLOR}
+                            fill={rating !== null && star <= rating ? STAR_COLOR : 'transparent'}
+                        />
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+            <Text style={styles.label}>Review</Text>
+            <TextInput
+                style={[styles.input, styles.reviewInput]}
+                placeholder="Write your thoughts about this item..."
+                placeholderTextColor={lightTheme.colors.secondaryText}
+                value={review}
+                onChangeText={setReview}
+                multiline
+                textAlignVertical="top"
+            />
+
+
             <View style={styles.buttonContainer}>
                 <CustomButton
                     title="Save Changes"
@@ -465,6 +501,9 @@ export default function EditMediaScreen({ route, navigation }) {
         </ScrollView>
     );
 }
+
+
+
 
 const styles = StyleSheet.create({
     photoPicker: {
@@ -560,6 +599,15 @@ const styles = StyleSheet.create({
     activeChipText: {
         color: '#FFFFFF',
         fontWeight: '600',
+    },
+    starRow: {
+    flexDirection: 'row',
+    gap: 8, //space between stars
+    marginBottom: lightTheme.spacing.lg,
+    marginLeft: 4
+    },
+    reviewInput: {
+        minHeight: 100, //taller box for longer reviews
     },
     buttonContainer: {
         marginTop: 20

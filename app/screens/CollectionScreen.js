@@ -145,6 +145,12 @@ export default function CollectionScreen({ navigation, route }) {
                         {/*    1. Render a dot separator <Text style={styles.dotSeparator}>•</Text> */}
                         {/*    2. Render a Text component displaying a star icon and the score (e.g., "★ 4/5"). */}
                         {/* ELSE: render nothing. */}
+                                {item.rating != null && (
+                            <>
+                                <Text style={styles.dotSeparator}>•</Text>
+                                <Text style={styles.cardRating}>★ {item.rating}/5</Text>
+                            </>
+                        )}
                     </View>
                 </View>
             </View>
@@ -380,5 +386,10 @@ const createStyles = (theme) => StyleSheet.create({
         fontSize: 12,
         color: theme.colors.secondaryText,
         marginHorizontal: 6,
+    },
+    cardRating: {
+        fontSize: 12,
+        fontWeight: '600', //same weight as the media type
+        color: '#D99A00', //gold so the rating stands out
     }
 });
