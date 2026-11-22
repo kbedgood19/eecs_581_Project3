@@ -36,6 +36,9 @@ export default function CollectionScreen({ navigation, route }) {
     const [searchQuery, setSearchQuery] = useState(initialQuery);
     const [activeFilter, setActiveFilter] = useState('All');
 
+    const [sortBy, setSortBy] = useState('title_asc');
+    const [formatFilter, setFormatFilter] = useState('All');
+    
     // SPRINT 2 TODO (Greeshma): Declare a state variable for 'sortBy' (default to 'title_asc').
     // SPRINT 2 TODO (Greeshma): Declare a state variable for 'formatFilter' (default to 'All').
     
@@ -69,7 +72,13 @@ export default function CollectionScreen({ navigation, route }) {
                     // Keep user.id as the first argument!
 
                     // SUPABASE INTEGRATION
-                    const data = await getMediaCatalog(user.id, searchQuery, activeFilter);
+                    const data = await getMediaCatalog(      
+                        user.id,
+                        searchQuery,
+                        activeFilter,
+                        sortBy,
+                        formatFilter
+                    );
                     if (isActive) {
                         setMediaItems(data);
                     }
@@ -93,7 +102,7 @@ export default function CollectionScreen({ navigation, route }) {
         
         // SPRINT 2 TODO (Greeshma): Add your 'sortBy' and 'formatFilter' state variables into this array bracket.
         // This ensures the screen immediately re-fetches the list whenever a user changes a sort/filter option!
-        }, [searchQuery, activeFilter])
+        }, [searchQuery, activeFilter, sortBy, formatFilter])
     );
 
     // UI for a single media item card
