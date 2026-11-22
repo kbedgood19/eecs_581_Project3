@@ -17,6 +17,7 @@ import { supabase } from '../database/supabase';
 
 import { lightTheme } from '../styles/theme'; // Assuming lightTheme is exported globally like in EditScreen
 import CustomButton from '../components/CustomButton';
+import { Star } from 'lucide-react-native'; //star icons for the rating
 
 const MEDIA_TYPES = ['Movie', 'Book', 'Music', 'VideoGame'];
 
@@ -37,6 +38,8 @@ const FORMAT_MAP = {
     VideoGame: ['Disc', 'Cartridge']
 };
 
+const STAR_COLOR = '#F5B400'; //gold color for the stars -sa
+
 export default function AddMediaScreen({ navigation }) {
     // Main fields
     const [title, setTitle] = useState('');
@@ -46,7 +49,9 @@ export default function AddMediaScreen({ navigation }) {
     const [releaseYear, setReleaseYear] = useState('');
 
     // SPRINT 2 TODO (Sabelli): Declare a state variable for 'rating' (default to null (NOT 0)).
+    const [rating, setRating] = useState(null); //1 to 5 stars, null means no rating yet
     // SPRINT 2 TODO (Sabelli): Declare a state variable for 'review' (default to an empty string '')
+    const [review, setReview] = useState(''); //written review
     
     // Subtype fields
     const [director, setDirector] = useState('');
@@ -165,8 +170,8 @@ export default function AddMediaScreen({ navigation }) {
                         subtypeData,
                         user.id,
                         photoUri,
-                        null,       // Temporary
-                        '',         // Temporary
+                        rating, //star rating or null
+                        review.trim(), //written review
                         copyNumber
                     );
                     console.log(`\n=== NEW ITEM SAVED: ID ${mediaId} ===`);
@@ -388,6 +393,35 @@ export default function AddMediaScreen({ navigation }) {
             {/* SPRINT 2 TODO (Sabelli): Build a multiline <TextInput> below the stars for the written review. */}
             {/* Bind it to your 'review' state variable. */}
 
+            <Text style={styles.label}>Rating</Text>
+            <View style={styles.starRow}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                    <TouchableOpacity
+                        key={star}
+                        onPress={() => setRating(rating === star ? null : star)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Rate ${star} out of 5`}
+                    >
+                        <Star
+                            size={32}
+                            color={STAR_COLOR}
+                            fill={rating !== null && star <= rating ? STAR_COLOR : 'transparent'}
+                        />
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+            <Text style={styles.label}>Review</Text>
+            <TextInput
+                style={[styles.input, styles.reviewInput]}
+                placeholder="Write your thoughts about this item..."
+                placeholderTextColor={lightTheme.colors.secondaryText}
+                value={review}
+                onChangeText={setReview}
+                multiline
+                textAlignVertical="top"
+            />
+
             <View style={styles.buttonGroup}>
                 <CustomButton title="Save Item" onPress={handleSave} />
                 <View style={{ height: 10 }} />
@@ -485,7 +519,16 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontWeight: '600',
     },
+    starRow: {
+        flexDirection: 'row',
+        gap: 8, //space between stars
+        marginBottom: lightTheme.spacing.lg,
+        marginLeft: 4
+    },
+    reviewInput: {
+        minHeight: 100, //taller box for longer reviews
+    },
     buttonGroup: {
-        marginTop: 10
+        marginTop: 10   ``
     }
 });
