@@ -107,7 +107,7 @@ export default function AccountScreen({ navigation }) {
                         onPress={() =>
                             Alert.alert(
                                 "Profile Picture",
-                                "Change profile picture functionality coming soon!"
+                                "Change profile picture functionality (to be implemented later)"
                             )
                         }
                     >

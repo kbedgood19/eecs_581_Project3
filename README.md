@@ -1,6 +1,6 @@
 # Media Catalog
 
-A physical media organizer built with JavaScript, React Native, Expo, and SQLite for Android and iPhone.
+A physical media organizer built with JavaScript, React Native, Expo, and Supabase for Android and iPhone.
 
 ## Requirements
 
@@ -47,7 +47,7 @@ cd "YOUR_FOLDER_PATH"
 Then run:
 
 ```bash
-git clone https://github.com/kbedgood19/eecs_581_Project3.git
+git clone [https://github.com/kbedgood19/eecs_581_Project3.git](https://github.com/kbedgood19/eecs_581_Project3.git)
 cd eecs_581_Project3
 ```
 
@@ -83,11 +83,22 @@ npm install
 
 Wait for installation to finish.
 
-This installs the project's dependencies, including React Native and Expo. You do not need to install them separately.
+This installs the project's dependencies, including React Native, Expo, and the Supabase client. You do not need to install them separately.
 
-The app initializes its SQLite database on startup. No separate database server is required.
+### 4. IMPORTANT UPDATE: Configure Supabase Environment Variables
 
-### 4. Sign Into Expo
+The app uses a hosted Supabase backend for user authentication and cloud database storage, so an active internet connection and a local `.env` file are required.
+
+Create a file USING VSCODE named `.env` inside the `app` folder (`eecs_581_Project3/app/.env`) and add the following lines:
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=[https://hxmlawfyvrdescyulmda.supabase.co](https://hxmlawfyvrdescyulmda.supabase.co)
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_CYGBI65H74rVNsomHq1TLw_iAlBF1XM
+```
+
+Make sure `.env` is saved directly inside the `app` directory (next to `package.json`), not in the repository root.
+
+### 5. Sign Into Expo
 
 On your phone:
 
@@ -129,7 +140,7 @@ The command should print your Expo username.
 
 Signing into Expo's website does not automatically sign you into the terminal. You do not need to create a project on Expo's website to run this app.
 
-### 5. Start the App
+### 6. Start the App
 
 Connect your phone and computer to the same Wi-Fi network.
 
@@ -138,13 +149,13 @@ From the `app` folder, run:
 #### Windows
 
 ```powershell
-npx.cmd expo start
+npx.cmd expo start -c
 ```
 
 #### Mac
 
 ```bash
-npx expo start
+npx expo start -c
 ```
 
 Once the QR code appears:
@@ -184,82 +195,9 @@ You do not need to reinstall packages or sign in every time. If teammates change
 
 ## Troubleshooting
 
-### Browser Login Fails
+### Missing `supabaseUrl` or Supabase Connection Error
 
-If Expo crashes while opening the browser, sign in through the terminal instead.
-
-#### Windows
-
-```powershell
-npx.cmd expo login --no-browser
-```
-
-#### Mac
-
-```bash
-npx expo login --no-browser
-```
-
-Enter your Expo username and password when prompted.
-
-If you registered through GitHub and never created an Expo password:
-
-1. Open [Expo's password reset page](https://expo.dev/reset-password).
-2. Enter your Expo username.
-3. Follow the emailed instructions to set a password.
-4. Retry terminal login using your Expo username and new Expo password.
-
-### Expo Go Says the Terminal Is Not Signed In
-
-1. Stop the development server with **Ctrl+C**.
-2. Run the appropriate `expo whoami` command above.
-3. Log in if needed.
-4. Confirm the terminal and Expo Go use the same account.
-5. Restart the server and scan the QR code again.
-
-### Phone Cannot Connect
-
-Confirm that:
-
-- Your phone and computer are on the same Wi-Fi network.
-- The development server is still running.
-- Expo Go is signed into the correct account.
-
-Some public or campus networks block connections between devices. If necessary, stop the server and try a tunnel connection:
-
-#### Windows
-
-```powershell
-npx.cmd expo start --tunnel
-```
-
-#### Mac
-
-```bash
-npx expo start --tunnel
-```
-
-Scan the new QR code.
-
-### Missing Package or package.json Error
-
-Make sure your terminal is inside:
-
-```text
-eecs_581_Project3/app
-```
-
-This folder contains `package.json`.
-
-Run `npm.cmd install` on Windows or `npm install` on Mac, then restart Expo.
-
-### npm Reports Vulnerabilities
-
-Do not automatically run `npm audit fix --force`, because it can introduce breaking dependency changes.
-
-Review the report with the team before updating packages.
-
-## Documentation
-
-- [Expo Development Guide](https://docs.expo.dev/get-started/start-developing/)
-- [Expo CLI Reference](https://docs.expo.dev/more/expo-cli/)
+1. Confirm the `.env` file is inside `eecs_581_Project3/app/.env` (not the repository root).
+2. Confirm both `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are copied accurately with no extra quotes or spaces.
+3. Stop the server with **Ctrl+C** and restart with the `-c` flag to clear Metro's cache:
+   - **Windows:** `npx.cmd expo start

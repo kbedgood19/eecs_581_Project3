@@ -24,6 +24,14 @@ import { getTheme } from '../styles/theme';
 import { getMediaCatalog } from '../database/supabaseController';
 import { supabase } from '../database/supabase';
 
+// Marie: FORMAT FILTER - physical format options mapped by collection media type filter
+const FORMAT_MAP = {
+    Movies: ['DVD', 'Blu-ray', '4K UHD', 'VHS'],
+    Books: ['Hardcover', 'Paperback'],
+    Music: ['Vinyl', 'CD', 'Cassette'],
+    'Video Games': ['Disc', 'Cartridge']
+};
+
 export default function CollectionScreen({ navigation, route }) {
     const isDarkMode = false;
     const theme = getTheme(isDarkMode);
@@ -41,6 +49,17 @@ export default function CollectionScreen({ navigation, route }) {
     const [isLoading, setIsLoading] = useState(true);
 
     const filters = ['All', 'Movies', 'Music', 'Books', 'Video Games'];
+
+    // Marie: FORMAT FILTER FIX - dynamically tie format chips to the active media type
+    const formatOptions = activeFilter !== 'All'
+        ? ['All', ...(FORMAT_MAP[activeFilter] || []), 'Unspecified']
+        : [];
+
+    // Marie: FORMAT FILTER FIX - reset format filter when switching media types
+    const handleFilterChange = (filter) => {
+        setActiveFilter(filter);
+        setFormatFilter('All');
+    };
 
     // Re-fetch data whenever the screen comes into focus OR filters change
     useFocusEffect(
@@ -235,32 +254,35 @@ export default function CollectionScreen({ navigation, route }) {
             </View>
 
             {/* FORMAT FILTER */}
-            <View style={styles.filterSection}>
-                <Text style={styles.sectionLabel}>Format:</Text>
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.filterScroll}
-                >
-                    {['All', 'Digital', 'Physical', 'Unspecified'].map(format => (
-                        <TouchableOpacity
-                            key={format}
-                            style={[
-                                styles.filterChip,
-                                formatFilter === format && styles.activeFilterChip
-                            ]}
-                            onPress={() => setFormatFilter(format)}
-                        >
-                            <Text style={[
-                                styles.filterText,
-                                formatFilter === format && styles.activeFilterText
-                            ]}>
-                                {format}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
+            {/* MARIE: only show physical format filters when a specific media type is selected */}
+            {activeFilter !== 'All' && (
+                <View style={styles.filterSection}>
+                    <Text style={styles.sectionLabel}>Format:</Text>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.filterScroll}
+                    >
+                        {formatOptions.map(format => (
+                            <TouchableOpacity
+                                key={format}
+                                style={[
+                                    styles.filterChip,
+                                    formatFilter === format && styles.activeFilterChip
+                                ]}
+                                onPress={() => setFormatFilter(format)}
+                            >
+                                <Text style={[
+                                    styles.filterText,
+                                    formatFilter === format && styles.activeFilterText
+                                ]}>
+                                    {format}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
 
             {/* MEDIA LIST */}
             {isLoading ? (

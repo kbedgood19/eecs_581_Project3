@@ -529,6 +529,6 @@ const styles = StyleSheet.create({
         minHeight: 100, //taller box for longer reviews
     },
     buttonGroup: {
-        marginTop: 10   ``
+        marginTop: 10
     }
 });
