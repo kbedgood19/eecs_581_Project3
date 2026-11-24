@@ -6,12 +6,20 @@ import * as ImagePicker from 'expo-image-picker'; //open the photo library
 import { File, Paths } from 'expo-file-system'; //save photos on the phone
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Alert, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Image } from 'react-native';
+
+
+// SPRINT 3 (Lauren)- REQUIREMENT 12
+// PSEUDOCODE (IMPORTS):
+// 1. REMOVE the static lightTheme import below
+// 2. IMPORT useTheme from '../styles/ThemeContext'
 import { lightTheme } from '../styles/theme';
 import CustomButton from '../components/CustomButton';
+
 import { Star } from 'lucide-react-native'; //star icons for the rating
 
+
 // Marie: SUPABASE INTEGRATION
-// SPRINT 2 TODO (Ximena): Also import checkDuplicateMedia from '../database/supabaseController'
+// SPRINT 2 (Ximena): Also import checkDuplicateMedia from '../database/supabaseController'
 import { getMediaItemById, updateMediaItem, deleteMediaItem, getMediaCatalog, checkDuplicateMedia } from '../database/supabaseController';
 import { supabase } from '../database/supabase';
 
@@ -33,7 +41,24 @@ const FORMAT_MAP = {
 };
 const STAR_COLOR = '#F5B400'; //gold color for the stars
 
+
+// SPRINT 3 (Ximena) - VERIFY INPUT
+// PSEUDOCODE (VALIDATION CONSTANTS & HELPERS):
+// 1. DEFINE the same input limit constants used in AddMediaScreen:
+//    - MIN_RELEASE_YEAR (e.g., 1000)
+//    - MAX_RELEASE_YEAR (current year + 1)
+//    - MAX_TITLE_LENGTH (e.g., 150)
+//    - MAX_CREATOR_LENGTH (e.g., 100)
+//    - MAX_REVIEW_LENGTH (e.g., 500)
+// 2. DEFINE the same text normalization helper (trim + collapse repeated internal spaces)
+//    - Note: Keep numbers and punctuation allowed in titles and creator names
+
 export default function EditMediaScreen({ route, navigation }) {
+    // SPRINT 3 (Lauren) - REQUIREMENT 12
+    // PSEUDOCODE (CONNECT TO GLOBAL THEME):
+    // 1. CALL the ThemeContext hook to retrieve the active theme object
+    // 2. GENERATE the screen's styles object by passing the active theme into createStyles()
+    
     const { mediaId } = route.params;
 
     // Main fields
@@ -43,9 +68,9 @@ export default function EditMediaScreen({ route, navigation }) {
     const [releaseYear, setReleaseYear] = useState('');
     const [mediaType, setMediaType] = useState('');
 
-    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'rating' (default to null)
+    // SPRINT 2 (Sabelli): Declare a state variable for 'rating' (default to null)
     const [rating, setRating] = useState(null); //1 to 5 stars, null means no rating yet
-    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'review' (default to empty string)
+    // SPRINT 2 (Sabelli): Declare a state variable for 'review' (default to empty string)
     const [review, setReview] = useState(''); //written review
     
     // Subtype fields
@@ -56,8 +81,13 @@ export default function EditMediaScreen({ route, navigation }) {
 
     const [isLoading, setIsLoading] = useState(true);
 
-    // SPRINT 2 TODO (Jaydine): Declare a state variable to hold the photo URI.
+    // SPRINT 2 (Jaydine): Declare a state variable to hold the photo URI.
     const [photoUri, setPhotoUri] = useState(null); //store the selected photo's location
+
+
+    // SPRINT 3 (Ximena) - VERIFY INPUT
+    // PSEUDOCODE (DOUBLE-SUBMIT GUARD STATE):
+    // 1. ADD an isSaving boolean state (default false) to prevent rapid taps on "Save Changes" from firing duplicate updates
 
     useEffect(() => {
         async function loadMediaDetails() {
@@ -103,7 +133,7 @@ export default function EditMediaScreen({ route, navigation }) {
         loadMediaDetails();
     }, [mediaId]);
 
-    // SPRINT 2 TODO (Jaydine): Implement the same asynchronous image picker function used in AddMediaScreen here.
+    // SPRINT 2 (Jaydine): Implement the same asynchronous image picker function used in AddMediaScreen here.
     const pickPhoto = async () => {
         try {
             const permission = await ImagePicker.requestMediaLibraryPermissionsAsync(); //request photo access
@@ -135,6 +165,33 @@ export default function EditMediaScreen({ route, navigation }) {
         }
     };
 
+
+
+    // SPRINT 3 (Ximena) - VERIFY INPUT
+    // PSEUDOCODE (FULL FORM VALIDATION BEFORE UPDATING):
+    // 1. IF isSaving is true, RETURN early
+    // 2. NORMALIZE title (trim + collapse extra spaces), trimmedYear, trimmedReview, and the active subtype field
+    // 3. REQUIRED FIELDS CHECK:
+    //    - Verify normalizedTitle, genre, format, and trimmedYear are all non-empty
+    //    - (Note: legacy items saved as 'Unspecified' load with format='', so requiring format prompts the user to select a real format)
+    //    - IF any are missing, show an Alert listing the missing fields and return
+    // 4. VALID OPTION CHECK:
+    //    - Verify genre exists in (GENRE_MAP[mediaType] || [])
+    //    - Verify format exists in (FORMAT_MAP[mediaType] || [])
+    // 5. STRICT RELEASE YEAR CHECK (replaces the loose parseInt check below):
+    //    - Verify trimmedYear matches ONLY 4 numeric digits (e.g., /^\d{4}$/) so "2024abc", "2024.5", or "-2024" fail
+    //    - Parse to integer and verify MIN_RELEASE_YEAR <= yearInt <= MAX_RELEASE_YEAR
+    //    - IF invalid, show an Alert stating the valid year range and return
+    // 6. LENGTH CHECKS:
+    //    - IF normalizedTitle exceeds MAX_TITLE_LENGTH, show an Alert and return
+    //    - IF the active subtype field (director/author/artist/developer) exceeds MAX_CREATOR_LENGTH, show an Alert and return
+    //    - IF trimmedReview exceeds MAX_REVIEW_LENGTH, show an Alert and return (blank reviews must remain allowed)
+    // 7. DEFENSIVE RATING CHECK:
+    //    - IF rating is not null, verify it is a whole number between 1 and 5
+    // 8. PASS normalizedTitle, trimmedReview, and normalized subtypeData into checkDuplicateMedia() and updateMediaItem()
+    // 9. MANAGE isSaving:
+    //    - Set isSaving(true) before the async try block
+    //    - Reset isSaving(false) on errors, on duplicate Alert "Cancel", and after saveChanges finishes
 
     const handleSave = async () => {
         if (!title.trim() || !genre || !releaseYear.trim()) {
@@ -170,7 +227,7 @@ export default function EditMediaScreen({ route, navigation }) {
                 return;
             }
 
-            // SPRINT 2 TODO (Ximena): Rewrite the save flow below to handle duplicate checking.
+            // SPRINT 2 (Ximena): Rewrite the save flow below to handle duplicate checking.
             // Note: 'photoUri', 'rating', and 'review' state variables will be added by Jaydine and Sabelli.
             // You MUST include them as the 7th, 8th, and 9th arguments in your update calls!
             // Argument order: (id, title, genre, releaseYear, typeName, subtypeData, photoUri, rating, review)
@@ -187,8 +244,6 @@ export default function EditMediaScreen({ route, navigation }) {
             // 3. ELSE (no duplicate found, or the match is this exact item):
             //      - Await updateMediaItem(mediaId, title.trim(), genre, yearInt, mediaType, subtypeData, photoUri, rating, review)
             //      - Show success alert and navigate goBack().
-
-            // SPRINT 2 TODO (Ximena): Remove the below code inside this try block once the above has been implemented.
             
             // Checks whether another item with this title already exists
             const duplicate = await checkDuplicateMedia(
@@ -299,6 +354,9 @@ export default function EditMediaScreen({ route, navigation }) {
     if (isLoading) {
         return (
             <View style={styles.centerContainer}>
+                {/* SPRINT 3 (Lauren) - REQUIREMENT 12
+                    PSEUDOCODE (INLINE THEME REFERENCE):
+                    Update ActivityIndicator color below to use the active theme's primary color */}
                 <ActivityIndicator size="large" color={lightTheme.colors.primary} />
             </View>
         );
@@ -306,9 +364,28 @@ export default function EditMediaScreen({ route, navigation }) {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+        
+            {/* SPRINT 3 (Lauren) - REQUIREMENT 12
+                PSEUDOCODE (INLINE THEME REFERENCES):
+                Update every TextInput placeholderTextColor below to read from the active theme object
+                retrieved from ThemeContext instead of lightTheme */}
+        
+            
+            {/* SPRINT 3 (Ximena) - VERIFY INPUT
+                PSEUDOCODE (UI INPUT CONSTRAINTS & CLEANUP):
+                1. ADD keyboardShouldPersistTaps="handled" to the ScrollView above
+                2. ADD maxLength props to TextInputs:
+                   - Title -> MAX_TITLE_LENGTH
+                   - Release Year -> 4, AND inside onChangeText strip non-digit characters (replace /[^0-9]/g with '') before calling setReleaseYear
+                   - Director, Author, Artist, Developer -> MAX_CREATOR_LENGTH
+                   - Review -> MAX_REVIEW_LENGTH
+                3. OPTIONAL: Display a small character counter below the Review TextInput (e.g., "{review.length} / {MAX_REVIEW_LENGTH}")
+                4. WHILE isSaving is true, prevent pressing "Save Changes" again (e.g., update title to "Saving..." or show loading state)
+                5. MINOR TEXT FIX: In confirmDelete above, fix "Are you sure want to..." -> "Are you sure you want to..." */}
+
             <Text style={styles.header}>Edit {mediaType}</Text>
             
-            {/* SPRINT 2 TODO (Jaydine): Insert the touchable image picker UI here. */}
+            {/* SPRINT 2 (Jaydine): Insert the touchable image picker UI here. */}
             {/* Ensure it displays the currently saved photo URI state so the user sees their existing image! */}
 
             <TouchableOpacity
@@ -454,7 +531,7 @@ export default function EditMediaScreen({ route, navigation }) {
                 </>
             )}
 
-            {/* SPRINT 2 TODO (Sabelli): Insert your Star Rating UI and multiline TextInput here. */}
+            {/* SPRINT 2 (Sabelli): Insert your Star Rating UI and multiline TextInput here. */}
             {/* Ensure they display the currently saved rating and review state variables so the user sees their existing feedback! */}
 
             <Text style={styles.label}>Rating</Text>
@@ -504,7 +581,11 @@ export default function EditMediaScreen({ route, navigation }) {
 
 
 
-
+// SPRINT 3 (Lauren) - REQUIREMENT 12
+// PSEUDOCODE (CONVERT STATIC STYLES TO DYNAMIC THEME):
+// 1. WRAP StyleSheet.create(...) below inside a createStyles(theme) function
+// 2. REPLACE every reference to lightTheme inside this stylesheet with the theme parameter
+// 3. Verify activeChipText maintains readable contrast on all 5 themes (e.g., theme.colors.surface or '#FFFFFF')
 const styles = StyleSheet.create({
     photoPicker: {
         alignItems: 'center',
@@ -597,7 +678,7 @@ const styles = StyleSheet.create({
         color: lightTheme.colors.secondaryText,
     },
     activeChipText: {
-        color: '#FFFFFF',
+        color: '#FFFFFF', // SPRINT 3 (Lauren) - change to color: theme.colors.surface
         fontWeight: '600',
     },
     starRow: {

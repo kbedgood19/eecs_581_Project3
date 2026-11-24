@@ -1,7 +1,7 @@
 // File: app/screens/AddMediaScreen.js
 // Purpose: Valid destination target for adding media with manual entry form and dynamic subtypes.
 
-// SPRINT 2 TODO (Jaydine): Import the Expo image picker and file system libraries
+// SPRINT 2 (Jaydine): Import the Expo image picker and file system libraries
 import * as ImagePicker from 'expo-image-picker'; //open the photo library
 import { File, Paths } from 'expo-file-system'; //save photos on the phone
 
@@ -11,10 +11,15 @@ import { File, Paths } from 'expo-file-system'; //save photos on the phone
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Alert, ScrollView, TouchableOpacity, Image } from 'react-native';
 
-// SPRINT 2 TODO (Ximena): Import checkDuplicateMedia from '../database/supabaseController'
+// SPRINT 2 (Ximena): Import checkDuplicateMedia from '../database/supabaseController'
 import { addMediaItem, checkDuplicateMedia } from '../database/supabaseController';
 import { supabase } from '../database/supabase';
 
+
+// SPRINT 3 (Lauren) - REQUIREMENT 12
+// PSEUDOCODE (IMPORTS):
+// 1. REMOVE the static lightTheme import below
+// 2. IMPORT useTheme from '../styles/ThemeContext'
 import { lightTheme } from '../styles/theme'; // Assuming lightTheme is exported globally like in EditScreen
 import CustomButton from '../components/CustomButton';
 import { Star } from 'lucide-react-native'; //star icons for the rating
@@ -38,9 +43,27 @@ const FORMAT_MAP = {
     VideoGame: ['Disc', 'Cartridge']
 };
 
+// SPRINT 3 (Ximena) - VERIFY INPUT
+// PSEUDOCODE (VALIDATION CONSTANTS & HELPERS):
+// 1. DEFINE input limit constants at the top of the file:
+//    - MIN_RELEASE_YEAR (e.g., 1000, so older books still pass while preventing 0, negative, or 2-digit years)
+//    - MAX_RELEASE_YEAR (current year + 1, to allow upcoming pre-orders while preventing typos/int4 overflow)
+//    - MAX_TITLE_LENGTH (e.g., 150)
+//    - MAX_CREATOR_LENGTH (e.g., 100, for director/author/artist/developer)
+//    - MAX_REVIEW_LENGTH (e.g., 500)
+// 2. DEFINE a small helper function to normalize text input:
+//    - Trim leading/trailing whitespace and collapse multiple consecutive spaces into a single space
+//    - Note: Do NOT strip numbers or punctuation from titles or creator names (e.g., "2001: A Space Odyssey", "50 Cent", "P!nk", "J.K. Rowling")
+
 const STAR_COLOR = '#F5B400'; //gold color for the stars -sa
 
 export default function AddMediaScreen({ navigation }) {
+    
+    // SPRINT 3 (Lauren) - REQUIREMENT 12
+    // PSEUDOCODE (CONNECT TO GLOBAL THEME):
+    // 1. CALL the ThemeContext hook to retrieve the active theme object
+    // 2. GENERATE the screen's styles object by passing the active theme into createStyles()
+    
     // Main fields
     const [title, setTitle] = useState('');
     const [mediaType, setMediaType] = useState('');
@@ -48,9 +71,9 @@ export default function AddMediaScreen({ navigation }) {
     const [format, setFormat] = useState('');
     const [releaseYear, setReleaseYear] = useState('');
 
-    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'rating' (default to null (NOT 0)).
+    // SPRINT 2 (Sabelli): Declare a state variable for 'rating' (default to null (NOT 0)).
     const [rating, setRating] = useState(null); //1 to 5 stars, null means no rating yet
-    // SPRINT 2 TODO (Sabelli): Declare a state variable for 'review' (default to an empty string '')
+    // SPRINT 2 (Sabelli): Declare a state variable for 'review' (default to an empty string '')
     const [review, setReview] = useState(''); //written review
     
     // Subtype fields
@@ -59,10 +82,15 @@ export default function AddMediaScreen({ navigation }) {
     const [artist, setArtist] = useState('');
     const [developer, setDeveloper] = useState('');
 
-    // SPRINT 2 TODO (Jaydine): Declare a state variable to store the selected photo's URI.
+    // SPRINT 2 (Jaydine): Declare a state variable to store the selected photo's URI.
     const [photoUri, setPhotoUri] = useState(null); //store the selected photo's location
 
-    // SPRINT 2 TODO (Jaydine): Create an asynchronous function to handle image selection:
+    // SPRINT 3 (Ximena) - VERIFY INPUT
+    // PSEUDOCODE (DOUBLE-SUBMIT GUARD STATE):
+    // 1. ADD an isSaving boolean state (default false) so rapid taps on "Save Item" cannot trigger duplicate inserts
+
+
+    // SPRINT 2 (Jaydine): Create an asynchronous function to handle image selection:
     // 1. Request media library permissions from the user.
     // 2. Open the device's image library.
     // 3. IF the user selects an image (doesn't cancel):
@@ -101,6 +129,36 @@ export default function AddMediaScreen({ navigation }) {
         }
     };
 
+
+    // SPRINT 3 (Ximena) - VERIFY INPUT
+    // PSEUDOCODE (FULL FORM VALIDATION BEFORE SAVING):
+    // 1. IF isSaving is true, RETURN early to prevent duplicate submissions
+    // 2. NORMALIZE title (trim + collapse extra spaces), trimmedYear, trimmedReview, and the subtype fields
+    // 3. REQUIRED FIELDS CHECK:
+    //    - Verify normalizedTitle, mediaType, genre, format, and trimmedYear are all non-empty
+    //    - (Including format prevents items from silently saving as 'Unspecified' and missing format filters)
+    //    - IF any are missing, show a clear Alert listing what is required and return
+    // 4. VALID OPTION CHECK:
+    //    - Verify mediaType exists in MEDIA_TYPES
+    //    - Verify genre exists in GENRE_MAP[mediaType]
+    //    - Verify format exists in FORMAT_MAP[mediaType]
+    // 5. STRICT RELEASE YEAR CHECK (replaces the loose parseInt check below):
+    //    - Verify trimmedYear contains ONLY 4 numeric digits (e.g., regex /^\d{4}$/) so values like "2024abc", "2024.5", or "-2024" are rejected
+    //    - Parse to integer and verify MIN_RELEASE_YEAR <= yearInt <= MAX_RELEASE_YEAR
+    //    - IF invalid, show an Alert stating the valid year range and return
+    // 6. LENGTH CHECKS:
+    //    - IF normalizedTitle exceeds MAX_TITLE_LENGTH, show an Alert and return
+    //    - IF the active subtype field (director/author/artist/developer) exceeds MAX_CREATOR_LENGTH, show an Alert and return
+    //    - IF trimmedReview exceeds MAX_REVIEW_LENGTH, show an Alert and return (blank reviews must remain allowed)
+    // 7. DEFENSIVE RATING CHECK:
+    //    - IF rating is not null, verify it is a whole number between 1 and 5
+    // 8. CLEAN SUBTYPE PAYLOAD:
+    //    - Build subtypeData using ONLY the active mediaType's normalized creator field (set unrelated creator fields to '')
+    //    - Pass normalizedTitle and trimmedReview into checkDuplicateMedia() and addMediaItem()
+    // 9. MANAGE isSaving:
+    //    - Set isSaving(true) before the async try block
+    //    - Reset isSaving(false) in error paths, when the user taps "Cancel" on the duplicate Alert, and after saveItem finishes
+
     const handleSave = async () => {
         if (!title.trim() || !mediaType || !genre || !releaseYear.trim()) {
             Alert.alert('Missing Information', 'Title, Media Type, Genre, and Release Year cannot be blank.');
@@ -131,7 +189,7 @@ export default function AddMediaScreen({ navigation }) {
                 Alert.alert('Authentication Error', 'You must be logged in to save media.');
                 return;
             }
-            // SPRINT 2 TODO (Ximena): Rewrite the save flow below to handle duplicate checking.
+            // SPRINT 2 (Ximena): Rewrite the save flow below to handle duplicate checking.
             // Note: 'photoUri', 'rating', and 'review' state variables will be added by Jaydine and Sabelli.
             // You MUST include them in your addMediaItem calls!
             // Argument order: (title, mediaType, genre, releaseYear, subtypeData, userId, photoUri, rating, review, copyNumber)
@@ -149,8 +207,6 @@ export default function AddMediaScreen({ navigation }) {
             // 3. ELSE (no duplicate):
             //      - Await addMediaItem(title.trim(), mediaType, genre, yearInt, subtypeData, user.id, photoUri, rating, review, 1)
             //      - Show success alert and navigate goBack().
-
-            // SPRINT 2 TODO (Ximena): Remove the below code inside this try block once the above has been implemented.
 
             // Checks wheher this item already exists in the user's collection
             const duplicate = await checkDuplicateMedia(
@@ -217,9 +273,30 @@ export default function AddMediaScreen({ navigation }) {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+           
+           {/* SPRINT 3 (Lauren) - REQUIREMENT 12
+                PSEUDOCODE (INLINE THEME REFERENCES):
+                Update every inline reference to lightTheme in the JSX below (all TextInput
+                placeholderTextColor props and the "Please select a Media Type first." helper texts)
+                to read from the active theme object retrieved from ThemeContext */}
+           
+
+            {/* SPRINT 3 (Ximena) - VERIFY INPUT
+                PSEUDOCODE (UI INPUT CONSTRAINTS & CLEANUP):
+                1. ADD keyboardShouldPersistTaps="handled" to the ScrollView above so tapping buttons while keyboard is open works cleanly
+                2. ADD maxLength props to TextInputs:
+                   - Title -> MAX_TITLE_LENGTH
+                   - Release Year -> 4, AND inside onChangeText strip any non-digit characters (replace /[^0-9]/g with '') before calling setReleaseYear
+                   - Director, Author, Artist, Developer -> MAX_CREATOR_LENGTH
+                   - Review -> MAX_REVIEW_LENGTH
+                3. ON Media Type chip onPress: ALSO clear director, author, artist, and developer states when switching types
+                   so previously typed values for another media type do not linger in state
+                4. OPTIONAL: Display a small character counter below the Review TextInput (e.g., "{review.length} / {MAX_REVIEW_LENGTH}")
+                5. WHILE isSaving is true, prevent pressing "Save Item" again (e.g., change button title to "Saving..." or show loading state) */}
+
             <Text style={styles.header}>Add New Media</Text>
 
-            {/* SPRINT 2 TODO (Jaydine): Add a touchable UI element here to trigger the image picker function. */}
+            {/* SPRINT 2 (Jaydine): Add a touchable UI element here to trigger the image picker function. */}
             {/* IF the photo URI state has a value: render the Image component using that URI. */}
             {/* ELSE: render a placeholder square or camera icon. */}
 
@@ -387,10 +464,10 @@ export default function AddMediaScreen({ navigation }) {
                 </>
             )}
 
-            {/* SPRINT 2 TODO (Sabelli): Build a touchable Star Rating UI component here (1 to 5 stars). */}
+            {/* SPRINT 2 (Sabelli): Build a touchable Star Rating UI component here (1 to 5 stars). */}
             {/* Bind it to your 'rating' state variable. */}
             
-            {/* SPRINT 2 TODO (Sabelli): Build a multiline <TextInput> below the stars for the written review. */}
+            {/* SPRINT 2 (Sabelli): Build a multiline <TextInput> below the stars for the written review. */}
             {/* Bind it to your 'review' state variable. */}
 
             <Text style={styles.label}>Rating</Text>
@@ -431,6 +508,12 @@ export default function AddMediaScreen({ navigation }) {
     );
 }
 
+
+// SPRINT 3 (Lauren) - REQUIREMENT 12
+// PSEUDOCODE (CONVERT STATIC STYLES TO DYNAMIC THEME):
+// 1. WRAP StyleSheet.create(...) below inside a createStyles(theme) function
+// 2. REPLACE every reference to lightTheme inside this stylesheet with the theme parameter
+// 3. Verify activeChipText maintains readable contrast on all 5 themes (e.g., theme.colors.surface or '#FFFFFF')
 const styles = StyleSheet.create({
     photoPicker: {
         alignItems: 'center',
@@ -516,7 +599,7 @@ const styles = StyleSheet.create({
         color: lightTheme.colors.secondaryText,
     },
     activeChipText: {
-        color: '#FFFFFF',
+        color: '#FFFFFF', // SPRINT 3 (Lauren) - change to color: theme.colors.surface
         fontWeight: '600',
     },
     starRow: {

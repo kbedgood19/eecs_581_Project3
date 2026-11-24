@@ -1,6 +1,7 @@
 
 // File: app/screens/SignUpScreen.js
 // Purpose: Allow users to create an account with Supabase.
+// Authors: Kaitlyn Bedgood, Lauren Lee
 
 import React, { useState } from 'react';
 import {
@@ -14,10 +15,21 @@ import {
 } from 'react-native';
 
 import { supabase } from '../database/supabase';
+
+// SPRINT 3 (Lauren) - REQUIREMENT 12
+// PSEUDOCODE (IMPORTS):
+// 1. REMOVE the static lightTheme import below
+// 2. IMPORT useTheme from '../styles/ThemeContext'
 import { lightTheme } from '../styles/theme';
 import CustomButton from '../components/CustomButton';
 
 export default function SignUpScreen({ navigation }) {
+    
+    // SPRINT 3 (Lauren) - REQUIREMENT 12
+    // PSEUDOCODE (CONNECT TO GLOBAL THEME):
+    // 1. CALL the ThemeContext hook to retrieve the active theme object
+    // 2. GENERATE the screen's styles object by passing the active theme into createStyles()
+    
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -75,6 +87,12 @@ export default function SignUpScreen({ navigation }) {
             style={styles.container}
             contentContainerStyle={styles.scrollContent}
         >
+
+            {/* SPRINT 3 (Lauren) - REQUIREMENT 12
+                PSEUDOCODE (INLINE THEME REFERENCES):
+                1. Update every placeholderTextColor below to use the active theme's secondaryText color
+                2. Pass the active theme's primary color to ActivityIndicator for visibility on dark themes */}
+
             <Text style={styles.header}>Create Account</Text>
 
             <Text style={styles.label}>Email</Text>
@@ -128,6 +146,10 @@ export default function SignUpScreen({ navigation }) {
     );
 }
 
+// SPRINT 3 (Lauren) - REQUIREMENT 12
+// PSEUDOCODE (CONVERT STATIC STYLES TO DYNAMIC THEME):
+// 1. WRAP StyleSheet.create(...) below inside a createStyles(theme) function
+// 2. REPLACE every reference to lightTheme inside this stylesheet with the theme parameter
 const styles = StyleSheet.create({
     container: {
         flex: 1,
