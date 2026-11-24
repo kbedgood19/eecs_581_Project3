@@ -1,11 +1,13 @@
 // File: app/screens/HomeScreen.js
 // Purpose: Foundational home screen that displays the app title and functional navigation buttons.
-// Author: Lauren Lee
+// Author: Lauren Lee, Marie Biernacki
+
+// Code Template: Gemini
 
 // Import React and useState for managing the search input.
 import React, { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-
+import CustomButton from "../components/CustomButton";
 
 // Import React Native components.
 import {
@@ -13,7 +15,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Switch,
   StatusBar,
   ScrollView,
   TextInput,
@@ -26,27 +27,25 @@ import {
   Heart,
   Clock,
   Search,
+  User, // SPRINT 3 (Marie): added User icon for Account screen navigation
 } from "lucide-react-native";
 
-// Import the shared theme configuration (light and dark mode).
-import { getTheme } from "../styles/theme";
+// SPRINT 3 (Marie): connect to global theme context for requirement 12
+import { useTheme } from "../styles/ThemeContext";
 import { supabase } from "../database/supabase";
+
 
 // SUPABASE INTEGRATION
 import { getMediaCatalog } from "../database/supabaseController";
 
 export default function HomeScreen({
-  navigation, // MARIE: Added for connecting the different screens
+  navigation, // Marie: Added for connecting the different screens
   // Data passed from the parent component or database.
   totalItems = 0,
   recentItems = [],
   favoriteItems = [],
 
-  // Dark mode state and callback.
-  isDarkMode = false,
-  onToggleTheme = () => {},
-
-  // Navigation callbacks for moving to other screens.
+  // SPRINT 3 (Marie): Navigation callbacks for moving to other screens.
   onNavigateCollection = () => {},
   onNavigateAdd = () => {},
   onNavigateFavorites = () => {},
@@ -55,15 +54,16 @@ export default function HomeScreen({
   // Callback used to send the search query to the Collection Screen.
   onSearch = () => {},
 }) {
-  // Select the appropriate theme based on the current dark mode setting.
-  const theme = getTheme(isDarkMode);
+
+  // SPRINT 3 (Marie): pull active theme, dark flag from ThemeContext
+  const { theme, isDark } = useTheme();
 
   // Generate styles using the selected theme colors.
   const styles = createStyles(theme);
 
   // Store the text entered into the search bar.
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Marie: SUPABASE INTEGRATION
   const [catalogItems, setCatalogItems] = useState([]);
 
@@ -98,6 +98,13 @@ export default function HomeScreen({
   const displayTotal = catalogItems.length;
   const displayRecent = catalogItems.slice(0, 3);
   
+
+  // SPRINT 3 (Jaydine) - REQUIREMENT 13
+  // PSEUDOCODE (FAVORITES COUNT):
+  // Filter catalogItems for items where item.rating !== null && item.rating >= 5
+  // Store the length in displayFavoritesCount
+  const displayFavoritesCount = 0; // TODO: replace with filtered count
+
   // Sign the current user out of Supabase.
   const handleLogout = async () => {
   const { error } = await supabase.auth.signOut();
@@ -113,8 +120,7 @@ export default function HomeScreen({
     const query = searchQuery.trim();
 
     if (query.length > 0) {
-      // onSearch(query);
-      // MARIE: passing query to collection screen
+      // Marie: passing query to collection screen
       navigation.navigate('Collection', {initialQuery: query});
     }
   };
@@ -154,9 +160,9 @@ export default function HomeScreen({
   return (
     <View style={styles.container}>
 
-      {/* Adjust the status bar text color for light and dark mode. */}
+      {/* SPRINT 3 (Marie): status bar follows global ThemeContext */}
       <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
+        barStyle={isDark ? "light-content" : "dark-content"}
         backgroundColor={theme.colors.statusBar}
       />
 
@@ -179,21 +185,16 @@ export default function HomeScreen({
             </Text>
           </View>
 
-          {/* Allows the user to switch between light and dark mode. */}
+          {/* SPRINT 3 (Marie): account navigation button */}
           <View style={styles.themeToggle}>
-            <Text style={styles.themeIcon}>
-              {isDarkMode ? "☾" : "☀"}
-            </Text>
-
-            <Switch
-              value={isDarkMode}
-              onValueChange={onToggleTheme}
-              trackColor={{
-                false: "#C9CED8",
-                true: theme.colors.primary,
-              }}
-              thumbColor="#FFFFFF"
-            />
+            <TouchableOpacity
+              style={styles.accountButton}
+              onPress={() => navigation.navigate('Account')}
+              activeOpacity={0.7}
+              accessibilityLabel="Open Account Settings"
+            >
+              <User size={21} color={theme.colors.text} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -280,8 +281,6 @@ export default function HomeScreen({
               color={theme.colors.primary}
             />
           }
-          // MARIE: modified to connect screens
-          //onPress={onNavigateCollection}
           onPress={() => navigation.navigate('Collection')}
         />
 
@@ -295,10 +294,14 @@ export default function HomeScreen({
               color={theme.colors.primary}
             />
           }
-          //onPress={onNavigateAdd}
-          // MARIE: modified to connect screens
           onPress={() => navigation.navigate('AddMedia')}
         />
+
+
+        {/* SPRINT 3 (Jaydine) - REQUIREMENT 13
+            PSEUDOCODE (FAVORITES NAVIGATION):
+            1. Update description below to use displayFavoritesCount instead of favoriteItems.length
+            2. Replace onPress={onNavigateFavorites} with () => navigation.navigate('Favorites') */}
 
         {/* Navigate to the user's favorite media. */}
         <ActionCard
@@ -383,12 +386,9 @@ export default function HomeScreen({
           Organize. Collect. Enjoy.
         </Text>
         {/* ================= LOGOUT ================= */}
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-        >
-          <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
+        <View style={{ marginTop: 20 }}>
+           <CustomButton title="Log Out" onPress={handleLogout} />
+        </View>
 
       </ScrollView>
     </View>
@@ -437,16 +437,16 @@ const createStyles = (theme) =>
       marginTop: 5,
     },
 
-    // Dark mode switch layout.
-    themeToggle: {
-      flexDirection: "row",
+    // SPRINT 3 (Marie): rounded icon button for navigating to AccountScreen
+    accountButton: {
+      width: 38,
+      height: 38,
+      borderRadius: theme.radius.full,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      justifyContent: "center",
       alignItems: "center",
-      gap: 5,
-    },
-
-    themeIcon: {
-      fontSize: 20,
-      color: theme.colors.text,
     },
 
     // Welcome message spacing.
@@ -655,20 +655,7 @@ const createStyles = (theme) =>
       marginTop: 6,
       textAlign: "center",
     },
-    // Logout button.
-    logoutButton: {
-        backgroundColor: theme.colors.primary,
-        padding: 15,
-        borderRadius: theme.radius.md,
-        alignItems: "center",
-        marginTop: 25,
-    },
-
-    logoutText: {
-        color: "#FFFFFF",
-        fontSize: 16,
-        fontWeight: "bold",
-    },
+    
     // Bottom message.
     footer: {
       textAlign: "center",

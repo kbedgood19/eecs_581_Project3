@@ -1,9 +1,17 @@
 // File: app/screens/AccountScreen.js
 // Purpose: User profile and app settings (including theme selection).
-// Author: Lauren Lee
+// Author: Lauren Lee, Marie Biernacki
 
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    TouchableOpacity,
+    Alert,
+    StatusBar,
+} from 'react-native';
 
 import {
     getTheme,
@@ -13,8 +21,13 @@ import {
     tropicalTheme,
     industrialTheme,
 } from '../styles/theme';
+
+// SPRINT 3 (Marie): import statements for themes, getting user information
+import { useTheme } from '../styles/ThemeContext';
 import CustomButton from '../components/CustomButton';
-// import { supabase } from '../database/supabase'; // Uncomment when linking AccountScreen to Supabase auth
+import { supabase } from '../database/supabase';
+
+
 
 const THEME_OPTIONS = [
     {
@@ -70,29 +83,87 @@ const THEME_OPTIONS = [
 ];
 
 export default function AccountScreen({ navigation }) {
-    // State for the currently selected theme name
-    const [currentThemeName, setCurrentThemeName] = useState('light');
+    
+    // SPRINT 3 (Marie): read saved global theme name and updater from ThemeContext
+    const { themeName: activeThemeName, setThemeName } = useTheme();
 
-    const theme = getTheme(currentThemeName);
-    const styles = createStyles(theme);
+    // SPRINT 3 (Marie): local preview state lets users inspect a theme before applying globally
+    const [previewThemeName, setPreviewThemeName] = useState(activeThemeName);
+    const [userEmail, setUserEmail] = useState('Loading...');
 
-    // Mock user data (until Supabase auth is hooked up on this screen)
-    const userEmail = "testuser@example.com";
+    // keep preview state synced if global theme changes elsewhere
+    useEffect(() => {
+        setPreviewThemeName(activeThemeName);
+    }, [activeThemeName]);
 
+    // SPRINT 3 (Marie): fetch currently signed-in user's email from Supabase on mount
+    useEffect(() => {
+        let isActive = true;
+
+        async function loadUserProfile() {
+            try {
+                const { data: { user }, error } = await supabase.auth.getUser();
+                if (error) {
+                    console.error('Failed to fetch user profile:', error.message);
+                    if (isActive) setUserEmail('Unavailable');
+                    return;
+                }
+                if (isActive) {
+                    setUserEmail(user?.email || 'No email found');
+                }
+            } catch (err) {
+                console.error('Unexpected error fetching user profile:', err);
+                if (isActive) setUserEmail('Unavailable');
+            }
+        }
+
+        loadUserProfile();
+
+        return () => {
+            isActive = false;
+        };
+    }, []);
+
+    // SPRINT 3 (Marie): derive live preview theme tokens and status flags
+    const previewTheme = getTheme(previewThemeName);
+    const isPreviewDark = previewThemeName === 'dark' || previewThemeName === 'industrial';
+    const hasUnsavedChange = previewThemeName !== activeThemeName;
+    const selectedOption = THEME_OPTIONS.find((opt) => opt.id === previewThemeName);
+    
+    const styles = createStyles(previewTheme);
+
+    // SPRINT 3 (Marie): sign out of Supabase (App.js auth listener handles navigating back to Login)
     const handleSignOut = async () => {
-        // TODO (Team): Replace with `const { error } = await supabase.auth.signOut();`
-        Alert.alert("Sign Out", "You have been signed out.");
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            Alert.alert('Sign Out Error', error.message);
+        }
     };
 
-    const changeTheme = (themeName) => {
-        setCurrentThemeName(themeName);
+    // SPRINT 3 (Marie): preview theme locally on AccountScreen without changing other screens yet
+    const handlePreviewTheme = (selectedThemeId) => {
+        setPreviewThemeName(selectedThemeId);
+    };
 
-        // Note: To persist theme changes across the whole app,
-        // move this state to a React Context or AsyncStorage in Sprint 3.
+    // SPRINT 3 (Marie): commit the previewed theme globally across the entire app
+    const handleApplyTheme = async () => {
+        if (!hasUnsavedChange) return;
+
+        await setThemeName(previewThemeName);
+        Alert.alert(
+            'Theme Applied',
+            `${selectedOption?.name || previewThemeName} theme has been applied across the app.`
+        );
     };
 
     return (
         <ScrollView style={styles.container}>
+            {/* SPRINT 3 (Marie): status bar updates live with the previewed theme */}
+            <StatusBar
+                barStyle={isPreviewDark ? 'light-content' : 'dark-content'}
+                backgroundColor={previewTheme.colors.statusBar}
+            />
+
             <Text style={styles.header}>My Account</Text>
 
             {/* Profile Section */}
@@ -123,25 +194,29 @@ export default function AccountScreen({ navigation }) {
             {/* Theme Selection Section */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>App Theme</Text>
-                <Text style={styles.subText}>Choose your aesthetic:</Text>
+                <Text style={styles.subText}>
+                    Tap a theme to preview it, then apply to update the whole app:
+                </Text>
 
                 {THEME_OPTIONS.map((option) => {
-                    const isSelected = currentThemeName === option.id;
+                    const isPreviewed = previewThemeName === option.id;
+                    const isActive = activeThemeName === option.id;
 
                     return (
                         <TouchableOpacity
                             key={option.id}
                             style={[
                                 styles.themeOption,
-                                isSelected && styles.selectedTheme,
+                                isPreviewed && styles.selectedTheme,
                             ]}
-                            onPress={() => changeTheme(option.id)}
+                            onPress={() => handlePreviewTheme(option.id)}
                             activeOpacity={0.8}
                         >
-                            {/* Theme name and description */}
+                            {/* SPRINT 3 (Marie): Theme name and description */}
                             <View style={styles.themeInfo}>
                                 <Text style={styles.themeName}>
                                     {option.name}
+                                    {isActive ? ' (Active)' : ''}
                                 </Text>
 
                                 <Text style={styles.themeDescription}>
@@ -162,18 +237,35 @@ export default function AccountScreen({ navigation }) {
                                 ))}
                             </View>
 
-                            {/* Selected checkmark */}
+                            {/* Previewed checkmark */}
                             <Text style={styles.checkmark}>
-                                {isSelected ? '✓' : ''}
+                                {isPreviewed ? '✓' : ''}
                             </Text>
                         </TouchableOpacity>
                     );
                 })}
+            
+            {/* SPRINT 3 (Marie): apply button commits previewed theme to ThemeContext */}
+                <View style={styles.applyButtonContainer}>
+                    <CustomButton
+                        title={
+                            hasUnsavedChange
+                                ? `Apply ${selectedOption?.name || previewThemeName} Theme`
+                                : 'Current Theme Active'
+                        }
+                        onPress={handleApplyTheme}
+                        themeOverride={previewTheme}
+                    />
+                </View>
             </View>
 
-            {/* Sign Out Section */}
+            {/* SPRINT 3 (Marie): Log Out Button updates with preview*/}
             <View style={styles.logoutContainer}>
-                <CustomButton title="Sign Out" onPress={handleSignOut} />
+                <CustomButton
+                    title="Log Out"
+                    onPress={handleSignOut}
+                    themeOverride={previewTheme}
+                />
             </View>
         </ScrollView>
     );
@@ -292,6 +384,38 @@ const createStyles = (theme) => StyleSheet.create({
         fontWeight: '600',
         color: theme.colors.primary,
     },
+
+    // SPRINT 3 (Marie): live preview card styles for requirement 12.3
+    previewCard: {
+        backgroundColor: theme.colors.background,
+        borderRadius: theme.radius.md,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        padding: theme.spacing.md,
+        marginTop: theme.spacing.sm,
+        marginBottom: theme.spacing.sm,
+    },
+    previewLabel: {
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 0.6,
+        color: theme.colors.primary,
+        marginBottom: 6,
+    },
+    previewTitle: {
+        fontSize: theme.typography.body,
+        fontWeight: 'bold',
+        color: theme.colors.text,
+        marginBottom: 4,
+    },
+    previewMeta: {
+        fontSize: theme.typography.caption,
+        color: theme.colors.secondaryText,
+    },
+    applyButtonContainer: {
+        marginTop: theme.spacing.xs,
+    },
+
     logoutContainer: {
         marginTop: 20,
         marginBottom: 40,

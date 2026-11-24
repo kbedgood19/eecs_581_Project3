@@ -1,28 +1,30 @@
 // File: app/components/CustomButton.js
 // Purpose: Reusable touch target component that inherits global theme properties.
-// Author: Sabelli Antebi Delmas
+// Author: Sabelli Antebi Delmas, Marie Biernacki
 // External Sources: Gemini (Code Template)
 
 // Import React Native components.
 import { TouchableOpacity, Text, StyleSheet } from "react-native";
 
-// Import the shared theme configuration (light and dark mode).
-import { getTheme } from "../styles/theme";
+// Marie: connect button to global theme context for requirement 12
+import { useTheme } from "../styles/ThemeContext";
 
 // Reusable button used across the app.
 // 'title' is the text shown on the button.
 // 'onPress' is the function that runs when the button is tapped (for example, navigation).
-// 'isDarkMode' selects the light or dark theme, same as the other screens.
+// 'themeOverride' optionally overrides the global theme (used for live previews on AccountScreen)
 export default function CustomButton({
     title,
     onPress = () => {},
-    isDarkMode = false,
+    themeOverride = null,
 }) {
-  // Select the appropriate theme based on the current dark mode setting.
-    const theme = getTheme(isDarkMode);
 
-  // Generate styles using the selected theme colors.
-    const styles = createStyles(theme);
+    // SPRINT 3 (Marie): use preview theme if provided, otherwise fall back to global theme
+    const { theme } = useTheme();
+    const activeTheme = themeOverride || theme;
+
+    // Generate styles using the active theme colors.
+    const styles = createStyles(activeTheme);
 
     return (
         <TouchableOpacity

@@ -1,13 +1,17 @@
 // File: app/App.js
 // Purpose: Main entry point that initializes the React Navigation container and registers all screen routes.
 
-// Author: Marie Biernacki
+// Author: Kaitlyn Bedgood, Marie Biernacki
 
 // External Sources: Gemini (Code Template)
 
 import { useEffect, useState } from 'react';
+
+// SPRINT 3 (Kaitlyn) - REQUIREMENT 9.3
+// PSEUDOCODE (REMOVE DEEP LINK IMPORT):
+// 1. REMOVE the expo-linking import below since password reset will use an email OTP code instead of a deep link
 import * as Linking from 'expo-linking';
-// import { View, Text, ActivityIndicator } from 'react-native';
+
 import { View, Text, ActivityIndicator, Button, Alert } from 'react-native';
 import { createTables } from './database/schema';
 import { getDatabase } from './database/database';
@@ -19,7 +23,6 @@ import {
     getMediaCatalog as getSupabaseMediaCatalog,
     addMediaItem as addSupabaseMediaItem
 } from './database/supabaseController';
-
 
 
 //import database functions for counting records and inserting and retrieving the sample item
@@ -38,12 +41,75 @@ import HomeScreen from './screens/HomeScreen';
 import CollectionScreen from './screens/CollectionScreen';
 import AddMediaScreen from './screens/AddMediaScreen';
 import EditMediaScreen from './screens/EditMediaScreen';
+import AccountScreen from './screens/AccountScreen';
+import FavoritesScreen from './screens/FavoritesScreen'; // SPRINT 3 - REQUIREMENT 13
 import LoginScreen from './screens/LoginScreen';
 import SignUpScreen from './screens/SignUpScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
 
+// SPRINT 3 (Marie) - import for applying the selected theme across the app
+import { ThemeProvider, useTheme } from './styles/ThemeContext';
+
 const Stack = createNativeStackNavigator();
+
+
+// --- SPRINT 3 (Marie) - REQUIREMENT 12 ---
+// inner navigator component so stack headers can read the active theme from context
+function AppNavigator({ isPasswordRecovery, session }) {
+    
+    // SPRINT 3 (Kaitlyn) - REQUIREMENT 9.3
+    // PSEUDOCODE (UPDATE NAVIGATOR PROPS & STACK LOGIC FOR OTP RECOVERY):
+    // 1. ACCEPT setIsPasswordRecovery as an additional prop in AppNavigator
+    // 2. SIMPLIFY the 3-way ternary inside Stack.Navigator into a 2-way check:
+    //    - IF session is truthy AND isPasswordRecovery is false:
+    //        RENDER the authenticated stack (Home, Collection, AddMedia, EditMedia, Account, Favorites)
+    //    - ELSE (user is logged out OR actively completing password recovery):
+    //        RENDER the auth stack containing Login, SignUp, ForgotPassword, AND ResetPassword
+    // 3. FOR the ResetPassword Stack.Screen, USE a render callback instead of component={...} so you can pass
+    //    the navigation/route props AND setIsPasswordRecovery down to ResetPasswordScreen without React Navigation warnings
+    //    (Why: keeping ResetPassword in the auth stack while blocking the authenticated stack when isPasswordRecovery is true
+    //    prevents verifyOtp's temporary session from kicking the user straight to Home before updateUser finishes)
+    
+    
+    const { theme } = useTheme();
+
+    return (
+        <NavigationContainer>
+            <Stack.Navigator
+                screenOptions={{
+                    headerStyle: { backgroundColor: theme.colors.surface },
+                    headerTintColor: theme.colors.text,
+                    contentStyle: { backgroundColor: theme.colors.background },
+                }}
+            >
+                {isPasswordRecovery ? (
+                    <Stack.Screen
+                        name="ResetPassword"
+                        component={ResetPasswordScreen}
+                    />
+                ) : session ? (
+                    <>
+                        <Stack.Screen name="Home" component={HomeScreen} />
+                        <Stack.Screen name="Collection" component={CollectionScreen} />
+                        <Stack.Screen name="AddMedia" component={AddMediaScreen} />
+                        <Stack.Screen name="EditMedia" component={EditMediaScreen} />
+                        <Stack.Screen name="Account" component={AccountScreen} />
+                        {/* SPRINT 3 - REQUIREMENT 13 */}
+                        <Stack.Screen name="Favorites" component={FavoritesScreen} />
+                    </>
+                ) : (
+                    <>
+                        <Stack.Screen name="Login" component={LoginScreen} />
+                        <Stack.Screen name="SignUp" component={SignUpScreen} />
+                        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+                    </>
+                )}
+            </Stack.Navigator>
+        </NavigationContainer>
+    );
+}
+
 
 export default function App() {
     const [databaseReady, setDatabaseReady] = useState(false);
@@ -108,6 +174,10 @@ export default function App() {
     }, []);
 
 
+    // SPRINT 3 (Kaitlyn) - REQUIREMENT 9.3
+    // PSEUDOCODE (REMOVE DEEP LINK HANDLER):
+    // 1. DELETE this entire useEffect block (handlePasswordResetLink, Linking.getInitialURL, and Linking.addEventListener)
+    //    because recovery tokens will now be entered manually as an OTP code on ResetPasswordScreen
     // Handle password reset links opened through Expo Go.
     useEffect(() => {
         const handlePasswordResetLink = async (url) => {
@@ -247,7 +317,7 @@ useEffect(() => {
         );
     }
 
-    // Wait until the database and authenticationis ready.
+    // Wait until the database and authentication is ready.
     if (!databaseReady || !authReady) {
         return (
             <View style={{
@@ -263,34 +333,16 @@ useEffect(() => {
     
     return (
 
+    // SPRINT 3 (Marie) - FINISHING REQUIREMENT 12
+        <ThemeProvider>
 
-
-<NavigationContainer>
-    <Stack.Navigator>
-
-            {isPasswordRecovery ? (
-                <Stack.Screen
-                    name="ResetPassword"
-                    component={ResetPasswordScreen}
-                />
-            ) : session ? (
-                <>
-                    
-
-                    <Stack.Screen name="Home" component={HomeScreen} />
-                    <Stack.Screen name="Collection" component={CollectionScreen} />
-                    <Stack.Screen name="AddMedia" component={AddMediaScreen} />
-                    <Stack.Screen name="EditMedia" component={EditMediaScreen} />
-                </>
-            ) : (
-                <>
-                    <Stack.Screen name="Login" component={LoginScreen} />
-                    <Stack.Screen name="SignUp" component={SignUpScreen} />
-                    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-
-                </>
-            )}
-        </Stack.Navigator>
-    </NavigationContainer>
+            {/* SPRINT 3 (Kaitlyn) - REQUIREMENT 9.3
+            PSEUDOCODE (PASS RECOVERY SETTER TO NAVIGATOR):
+            1. PASS setIsPasswordRecovery as a prop to AppNavigator below */}
+            <AppNavigator
+                isPasswordRecovery={isPasswordRecovery}
+                session={session}
+            />
+        </ThemeProvider>
     );
 }

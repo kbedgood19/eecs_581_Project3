@@ -383,7 +383,7 @@ export async function updateMediaItem(
         if (subtypeError) throw subtypeError;
     }
 
-    // 3. upsert UserFeedback only when a valid rating or review is provided
+    // 3. upsert UserFeedback when a rating or review is provided, or remove it if both were cleared
     const hasRating = rating !== null && rating !== undefined && rating > 0;
     const hasReview = typeof review === 'string' && review.trim() !== '';
 
@@ -403,6 +403,15 @@ export async function updateMediaItem(
             );
 
         if (feedbackError) throw feedbackError;
+    } else {
+        
+        // SPRINT 3 (Marie): delete existing feedback row when both rating and review are cleared
+        const { error: deleteFeedbackError } = await supabase
+            .from('UserFeedback')
+            .delete()
+            .eq('media_id', id);
+
+        if (deleteFeedbackError) throw deleteFeedbackError;
     }
 }
 
@@ -427,4 +436,23 @@ export async function deleteMediaItem(id) {
         .eq('id', id);
 
     if (itemError) throw itemError;
+}
+
+// SPRINT 3 (Jaydine) - function to get the Favorite Media list
+export async function getFavoriteMedia(
+    userId,
+    searchQuery = '',
+    filterType = 'All',
+    sortBy = 'title_asc',
+    formatFilter = 'All'
+) {
+    
+    // SPRINT 3 (Jaydine) - REQUIREMENT 13
+    // PSEUDOCODE (GET FAVORITES - REQ 13.1):
+    // 1. Call getMediaCatalog(userId, searchQuery, filterType, sortBy, formatFilter)
+    // 2. Filter the returned array so ONLY items with rating !== null && rating >= 5 are kept
+    // 3. Return the filtered array
+
+    // TODO: replace placeholder below using the pseudocode above
+    return [];
 }

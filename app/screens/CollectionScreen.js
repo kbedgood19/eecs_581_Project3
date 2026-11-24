@@ -1,5 +1,7 @@
 // File: app/screens/CollectionScreen.js
 // Purpose: Main catalog view with search, filtering, and media display.
+// Authors: Marie Biernacki, Ximena Bustos, Sabelli Antebi Delmas, Jaydine Stiles, Greeshma Kunduri
+// External Sources: Gemini (Code Template)
 
 import React, { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
@@ -18,7 +20,11 @@ import {
 } from 'react-native';
 
 import { Search } from 'lucide-react-native';
-import { getTheme } from '../styles/theme';
+
+
+// SPRINT 3 (Marie): connect to global theme context for requirement 12
+// IMPORT useTheme from '../styles/ThemeContext'
+import { useTheme } from '../styles/ThemeContext';
 
 // Marie: SUPABASE INTEGRATION
 import { getMediaCatalog } from '../database/supabaseController';
@@ -33,8 +39,9 @@ const FORMAT_MAP = {
 };
 
 export default function CollectionScreen({ navigation, route }) {
-    const isDarkMode = false;
-    const theme = getTheme(isDarkMode);
+    
+    // SPRINT 3 (Marie): retrieve active theme and dark flag from ThemeContext
+    const { theme, isDark } = useTheme();
     const styles = createStyles(theme);
 
     const initialQuery = route.params?.initialQuery || '';
@@ -175,10 +182,12 @@ export default function CollectionScreen({ navigation, route }) {
 
     return (
         <View style={styles.container}>
+            {/* SPRINT 3 (Marie): status bar follows global ThemeContext */}
             <StatusBar
-                barStyle={isDarkMode ? "light-content" : "dark-content"}
-                backgroundColor={theme.colors.background}
+                barStyle={isDark ? "light-content" : "dark-content"}
+                backgroundColor={theme.colors.statusBar}
             />
+            
 
             {/* SEARCH BAR */}
             <View style={styles.searchContainer}>
@@ -207,7 +216,7 @@ export default function CollectionScreen({ navigation, route }) {
                                 styles.filterChip,
                                 activeFilter === filter && styles.activeFilterChip
                             ]}
-                            onPress={() => setActiveFilter(filter)}
+                            onPress={() => handleFilterChange(filter)} // SPRINT 3 (Marie): handleFilterChange function needed
                             activeOpacity={0.7}
                         >
                             <Text style={[
@@ -254,7 +263,7 @@ export default function CollectionScreen({ navigation, route }) {
             </View>
 
             {/* FORMAT FILTER */}
-            {/* MARIE: only show physical format filters when a specific media type is selected */}
+            {/* Marie: only show physical format filters when a specific media type is selected */}
             {activeFilter !== 'All' && (
                 <View style={styles.filterSection}>
                     <Text style={styles.sectionLabel}>Format:</Text>
